@@ -126,6 +126,35 @@ h2{
   margin:0 0 9px; font:600 10px/1 var(--mono);
   letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3);
 }
+/* collapsible sections — the lists get long, and everything below them
+   would otherwise be a scroll away */
+details.fold{border-bottom:1px solid var(--edge); padding:11px 13px}
+details.fold summary{
+  display:flex; align-items:center; gap:8px; cursor:pointer; list-style:none;
+}
+details.fold summary::-webkit-details-marker{display:none}
+/* the arrow is drawn, not typed: no dependency on the font having the glyph */
+details.fold summary::before{
+  content:""; flex:none; width:0; height:0;
+  border:4px solid transparent; border-left-color:var(--ink-3);
+  transform-origin:2px 4px; transition:transform .12s;
+}
+details.fold[open] summary::before{transform:rotate(90deg)}
+details.fold summary h2{margin:0}
+details.fold summary .n{
+  font:11px/1 var(--mono); color:var(--ink-3); font-variant-numeric:tabular-nums;
+}
+details.fold summary .hint{
+  margin-left:auto; font:9px/1 var(--mono); letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3); opacity:.7;
+}
+details.fold summary:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+details.fold[open] > :not(summary){margin-top:9px}
+
+/* fixed height so the sections under it never move while hovering; 286px is
+   the tallest case — a portal: 7 rows plus its 6 raw numbers */
+#pick{height:286px; overflow:auto}
+
 .kv{display:grid; grid-template-columns:auto 1fr; gap:3px 10px; align-items:baseline}
 .kv dt{font:11px/1.5 var(--ui); color:var(--ink-2)}
 .kv dd{

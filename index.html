@@ -69,24 +69,24 @@
       </section>
 
       <section>
-        <h2>Objects · click to hide</h2>
-        <div class="grouplist" id="objs"><span class="muted">—</span></div>
-      </section>
-
-      <section>
-        <h2>Line groups · click to hide</h2>
-        <div class="grouplist" id="groups"><span class="muted">—</span></div>
-      </section>
-
-      <section>
         <h2>Under cursor</h2>
         <div id="pick"><span class="muted">hover a line or object</span></div>
       </section>
 
-      <section>
-        <h2>Raw file tail</h2>
+      <details class="fold" open>
+        <summary><h2>Objects</h2><span class="n" id="objsn"></span><span class="hint">click to hide</span></summary>
+        <div class="grouplist" id="objs"><span class="muted">—</span></div>
+      </details>
+
+      <details class="fold" open>
+        <summary><h2>Line groups</h2><span class="n" id="groupsn"></span><span class="hint">click to hide</span></summary>
+        <div class="grouplist" id="groups"><span class="muted">—</span></div>
+      </details>
+
+      <details class="fold">
+        <summary><h2>Raw file tail</h2></summary>
         <pre class="raw" id="tail">—</pre>
-      </section>
+      </details>
     </aside>
   </main>
 

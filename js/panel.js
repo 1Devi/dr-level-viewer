@@ -30,7 +30,9 @@ export function renderInfo(){
   if(lv.skipped.length) w.push('<p class="note">Before the <b>z</b> and <b>c</b> sections the game tries to read an optional number and discards it. This file has some: ' + lv.skipped.map(nm).join(", ") + "</p>");
   $("parsewarn").innerHTML = w.join("");
 
-  $("objs").innerHTML = OBJ.filter(d => lv.objects[d.id].length).map(d =>
+  const used = OBJ.filter(d => lv.objects[d.id].length);
+  $("objsn").textContent = used.length;
+  $("objs").innerHTML = used.map(d =>
     '<button class="grow' + (state.hidden.has("o|" + d.id) ? " off" : "") + '" data-g="o|' + d.id + '">' +
       (d.circle ? '<span class="sw" style="border-radius:50%;background:' + d.circle + '"></span>'
                 : '<img class="sw" style="border:0" src="' + SPR[d.spr] + '" alt="">') +
@@ -40,6 +42,7 @@ export function renderInfo(){
   ).join("") || '<span class="muted">no objects</span>';
 
   const gs = groupsOf(lv);
+  $("groupsn").textContent = gs.length;
   $("groups").innerHTML = gs.map(g =>
     '<button class="grow' + (state.hidden.has(g.key) ? " off" : "") + '" data-g="' + g.key + '">' +
       '<span class="sw" style="background:' + rgb(g.c) + '"></span>' +
