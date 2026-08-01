@@ -6,9 +6,10 @@ import {cv, draw, fit, setZ, toLvl, initView} from "./view.js";
 import {pickAt} from "./pick.js";
 import {renderInfo, renderPick} from "./panel.js";
 import {saveView, readHash} from "./hash.js";
+import {initImageGen, isImageFile, openImage, genOpen} from "./imggen.js";
 
 /* ---------- loading ---------- */
-function load(text, name){
+export function load(text, name, refit){
   let parsed;
   try{
     parsed = parseLevel(text);
@@ -22,17 +23,21 @@ function load(text, name){
   $("fname").textContent = name;
   $("fname").classList.remove("empty");
   $("note").classList.add("hide");
-  const h = readHash();
+  const h = refit ? null : readHash();
   if(h){ state.cam = {x: h.x, y: h.y}; setZ(h.z); }
   else fit();
   renderInfo(); renderPick();
 }
 
+/* An image opens the generator, anything else is read as a level. */
+function take(f){
+  if(!f) return;
+  if(isImageFile(f)) openImage(f);
+  else f.text().then(t => load(t, f.name));
+}
+
 /* ---------- events ---------- */
-$("file").addEventListener("change", e => {
-  const f = e.target.files[0];
-  if(f) f.text().then(t => load(t, f.name));
-});
+$("file").addEventListener("change", e => { take(e.target.files[0]); e.target.value = ""; });
 for(const b of document.querySelectorAll("[data-t]")){
   b.addEventListener("click", () => {
     const k = b.dataset.t;
@@ -99,7 +104,8 @@ cv.addEventListener("pointerleave", () => {
 });
 
 addEventListener("keydown", e => {
-  if(e.target && e.target.matches && e.target.matches("input")) return;
+  if(genOpen()) return;
+  if(e.target && e.target.matches && e.target.matches("input, select, textarea")) return;
   const k = e.key.toLowerCase();
   if(k === "f"){ fit(); }
   else if(k === "g"){ document.querySelector('[data-t="grid"]').click(); }
@@ -115,9 +121,9 @@ addEventListener("dragover", e => e.preventDefault());
 addEventListener("dragleave", e => { if(--dc <= 0){ dc = 0; $("drop").classList.remove("show"); } });
 addEventListener("drop", e => {
   e.preventDefault(); dc = 0; $("drop").classList.remove("show");
-  const f = e.dataTransfer.files[0];
-  if(f) f.text().then(t => load(t, f.name));
+  take(e.dataTransfer.files[0]);
 });
 
 loadSprites(draw);
+initImageGen(load);
 initView();

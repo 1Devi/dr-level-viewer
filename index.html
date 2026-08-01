@@ -20,6 +20,7 @@
 
     <div class="grp">
       <label class="btn pri" title="Levels live in %AppData%\17Studio\Draw Rider\Documents\userlevels">Open file<input type="file" id="file" hidden></label>
+      <button class="btn" id="genopen" title="Build a level out of a JPG/PNG — one image pixel per line">Image →</button>
     </div>
     <span class="fname empty" id="fname">no file loaded</span>
 
@@ -96,6 +97,59 @@
     <span><span class="k">bounds</span> <b id="bb">—</b></span>
     <span class="r">drag to pan · wheel to zoom · F fit · G grid</span>
   </footer>
+
+  <!-- image -> level generator -->
+  <div class="modal" id="genwrap" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gentitle">
+      <header>
+        <h2 id="gentitle">Image → level</h2>
+        <span class="muted" id="genname">no image</span>
+        <button class="btn sq" id="genx" title="Close (Esc)">×</button>
+      </header>
+
+      <div class="sheetbody">
+        <div class="genprev">
+          <div class="pvbox"><canvas id="genpv" width="1" height="1" title="click a pixel to use its colour as the one to drop"></canvas></div>
+          <p class="muted" id="geninfo">choose a PNG or JPG</p>
+          <label class="btn wide">Choose image…<input type="file" id="genfile" hidden accept="image/png,image/jpeg,image/webp,image/*"></label>
+          <p class="muted small">one image pixel → one record · a level file can also be dropped anywhere on the page</p>
+        </div>
+
+        <div class="genopts">
+          <label class="row"><span>Width in pixels</span><input type="number" id="o_w" min="2" max="512" step="1" value="96"></label>
+          <input class="rng" type="range" id="o_wr" min="2" max="512" step="1" value="96" aria-label="Width in pixels">
+
+          <label class="row"><span>Pixel size (units)</span><input type="number" id="o_s" min="1" max="64" step="1" value="10"></label>
+          <label class="row"><span>Layer</span>
+            <select id="o_layer">
+              <option value="decor">scenery (decor)</option>
+              <option value="solid">lines (solid)</option>
+            </select>
+          </label>
+
+          <hr>
+          <label class="row"><span>Alpha cut-off</span><input type="number" id="o_a" min="0" max="255" step="1" value="8"></label>
+          <label class="row chk"><input type="checkbox" id="o_skip"><span>Drop this colour</span><input type="color" id="o_key" value="#ffffff"></label>
+          <label class="row"><span>…tolerance</span><input type="number" id="o_tol" min="0" max="255" step="1" value="12"></label>
+
+          <hr>
+          <label class="row"><span>Posterize (0 = off)</span><input type="number" id="o_p" min="0" max="32" step="1" value="0"></label>
+          <label class="row"><span>Level background</span><input type="color" id="o_bg" value="#ffffff"></label>
+          <label class="row chk"><input type="checkbox" id="o_smooth" checked><span>Smooth downscale</span></label>
+          <label class="row chk"><input type="checkbox" id="o_merge"><span>Merge equal runs in a row</span></label>
+
+          <hr>
+          <label class="row"><span>Level name</span><input type="text" id="o_name" value="pixels" maxlength="48"></label>
+        </div>
+      </div>
+
+      <footer>
+        <span class="genwarn" id="genwarn"></span>
+        <button class="btn" id="gendl" disabled title="Save the file into …\Draw Rider\Documents\userlevels">Download level</button>
+        <button class="btn pri" id="gengo" disabled>Generate &amp; view</button>
+      </footer>
+    </div>
+  </div>
 </div>
 
 <script type="module" src="js/app.js"></script>
