@@ -1,157 +1,198 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DR Level Viewer — Draw Rider</title>
-<meta name="description" content="Open a Draw Rider level file and inspect it 1:1 in the browser — lines, objects, camera, raw tail.">
-<meta name="color-scheme" content="light dark">
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/viewer.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DR Level Viewer — Draw Rider</title>
+  <meta name="description"
+    content="Open a Draw Rider level file and inspect it 1:1 in the browser — lines, objects, camera, raw tail.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/viewer.css">
 </head>
+
 <body>
-<div id="app">
+  <div id="app">
 
-  <header class="bar">
-    <div class="brand">
-      <span class="mark" aria-hidden="true"></span>
-      <span><b>DR Level Viewer</b><span>Draw Rider format · 1:1 render</span></span>
-    </div>
-
-    <div class="grp">
-      <label class="btn pri" title="Levels live in %AppData%\17Studio\Draw Rider\Documents\userlevels">Open file<input type="file" id="file" hidden></label>
-      <button class="btn" id="genopen" title="Build a level out of a JPG/PNG — one image pixel per line">Image →</button>
-    </div>
-    <span class="fname empty" id="fname">no file loaded</span>
-
-    <div class="spacer"></div>
-
-    <div class="grp">
-      <button class="btn sq" id="zout" title="Zoom out (−)">−</button>
-      <button class="btn mono" id="zval" title="Reset to 100%">100%</button>
-      <button class="btn sq" id="zin" title="Zoom in (+)">+</button>
-      <button class="btn" id="fit" title="Fit level (F)">Fit</button>
-      <button class="btn" id="png" title="Save PNG">PNG</button>
-    </div>
-  </header>
-
-  <main>
-    <div class="stage" id="stage">
-      <canvas id="cv"></canvas>
-      <div class="empty-note" id="note">
-        drop a level file here
-        <span class="hint">the game keeps them in<br>
-          <code>%AppData%\17Studio\Draw Rider\Documents\userlevels</code><br>
-          i.e. C:\Users\&lt;you&gt;\AppData\Roaming\17Studio\…
-        </span>
-      </div>
-      <div class="drop" id="drop">release to open</div>
-    </div>
-
-    <aside id="side">
-      <section>
-        <h2>Level</h2>
-        <dl class="kv" id="meta"><dd class="muted" style="grid-column:1/-1;text-align:left">—</dd></dl>
-        <div id="parsewarn"></div>
-      </section>
-
-      <section>
-        <h2>Draw</h2>
-        <div class="toggles">
-          <button class="btn on" data-t="solid">Solid</button>
-          <button class="btn on" data-t="decor">Decor</button>
-          <button class="btn on" data-t="grid">Grid</button>
-          <button class="btn on" data-t="finish">Finish</button>
-          <button class="btn on" data-t="start">Start</button>
-          <button class="btn on" data-t="obj">Objects</button>
-          <button class="btn on" data-t="bg">Background</button>
-          <button class="btn" data-t="wire">Outlines</button>
-        </div>
-      </section>
-
-      <section>
-        <h2>Under cursor</h2>
-        <div id="pick"><span class="muted">hover a line or object</span></div>
-      </section>
-
-      <details class="fold" open>
-        <summary><h2>Objects</h2><span class="n" id="objsn"></span><span class="hint">click to hide</span></summary>
-        <div class="grouplist" id="objs"><span class="muted">—</span></div>
-      </details>
-
-      <details class="fold" open>
-        <summary><h2>Line groups</h2><span class="n" id="groupsn"></span><span class="hint">click to hide</span></summary>
-        <div class="grouplist" id="groups"><span class="muted">—</span></div>
-      </details>
-
-      <details class="fold">
-        <summary><h2>Raw file tail</h2></summary>
-        <pre class="raw" id="tail">—</pre>
-      </details>
-    </aside>
-  </main>
-
-  <footer class="status">
-    <span><span class="k">x</span> <b id="mx">—</b> <span class="k">y</span> <b id="my">—</b></span>
-    <span><span class="k">lines</span> <b id="cnt">0</b></span>
-    <span><span class="k">bounds</span> <b id="bb">—</b></span>
-    <span class="r">drag to pan · wheel to zoom · F fit · G grid</span>
-  </footer>
-
-  <!-- image -> level generator -->
-  <div class="modal" id="genwrap" hidden>
-    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gentitle">
-      <header>
-        <h2 id="gentitle">Image → level</h2>
-        <span class="muted" id="genname">no image</span>
-        <button class="btn sq" id="genx" title="Close (Esc)">×</button>
-      </header>
-
-      <div class="sheetbody">
-        <div class="genprev">
-          <div class="pvbox"><canvas id="genpv" width="1" height="1" title="click a pixel to use its colour as the one to drop"></canvas></div>
-          <p class="muted" id="geninfo">choose a PNG or JPG</p>
-          <label class="btn wide">Choose image…<input type="file" id="genfile" hidden accept="image/png,image/jpeg,image/webp,image/*"></label>
-          <p class="muted small">one image pixel → one record · a level file can also be dropped anywhere on the page</p>
-        </div>
-
-        <div class="genopts">
-          <label class="row"><span>Width in pixels</span><input type="number" id="o_w" min="2" max="512" step="1" value="96"></label>
-          <input class="rng" type="range" id="o_wr" min="2" max="512" step="1" value="96" aria-label="Width in pixels">
-
-          <label class="row"><span>Pixel size (units)</span><input type="number" id="o_s" min="1" max="64" step="1" value="10"></label>
-          <label class="row"><span>Layer</span>
-            <select id="o_layer">
-              <option value="decor">scenery (decor)</option>
-              <option value="solid">lines (solid)</option>
-            </select>
-          </label>
-
-          <hr>
-          <label class="row"><span>Alpha cut-off</span><input type="number" id="o_a" min="0" max="255" step="1" value="8"></label>
-          <label class="row chk"><input type="checkbox" id="o_skip"><span>Drop this colour</span><input type="color" id="o_key" value="#ffffff"></label>
-          <label class="row"><span>…tolerance</span><input type="number" id="o_tol" min="0" max="255" step="1" value="12"></label>
-
-          <hr>
-          <label class="row"><span>Posterize (0 = off)</span><input type="number" id="o_p" min="0" max="32" step="1" value="0"></label>
-          <label class="row"><span>Level background</span><input type="color" id="o_bg" value="#ffffff"></label>
-          <label class="row chk"><input type="checkbox" id="o_smooth" checked><span>Smooth downscale</span></label>
-          <label class="row chk"><input type="checkbox" id="o_merge"><span>Merge equal runs in a row</span></label>
-
-          <hr>
-          <label class="row"><span>Level name</span><input type="text" id="o_name" value="pixels" maxlength="48"></label>
-        </div>
+    <header class="bar">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"></span>
+        <span><b>DR Level Viewer</b><span>Draw Rider format · 1:1 render</span></span>
       </div>
 
-      <footer>
-        <span class="genwarn" id="genwarn"></span>
-        <button class="btn" id="gendl" disabled title="Save the file into …\Draw Rider\Documents\userlevels">Download level</button>
-        <button class="btn pri" id="gengo" disabled>Generate &amp; view</button>
-      </footer>
+      <nav class="menubar" id="menubar" aria-label="Main menu">
+        <div class="menu">
+          <button class="mtitle" type="button" aria-haspopup="true" aria-expanded="false">Menu</button>
+          <div class="mpop" role="menu">
+            <button class="mitem" type="button" role="menuitem" data-a="open"
+              title="Levels live in %AppData%\17Studio\Draw Rider\Documents\userlevels">
+              Open file<span class="mk">Ctrl+O</span></button>
+            <button class="mitem" type="button" role="menuitem" data-a="image"
+              title="Build a level out of a JPG/PNG — one image pixel per record">
+              Pixelate image<span class="mk">Ctrl+P</span></button>
+            <hr>
+            <button class="mitem" type="button" role="menuitem" data-a="save" data-need="level"
+              title="Write the level back out: d10.0 footer, guarded against the x = 1.0 save bug">
+              Save level<span class="mk">Ctrl+S</span></button>
+            <button class="mitem" type="button" role="menuitem" data-a="png" data-need="level">
+              Save PNG<span class="mk">Ctrl+Shift+S</span></button>
+          </div>
+        </div>
+      </nav>
+      <input type="file" id="file" hidden>
+
+      <span class="fname empty" id="fname">no file loaded</span>
+
+      <div class="spacer"></div>
+
+      <div class="grp">
+        <button class="btn sq" id="zout" title="Zoom out (−)">−</button>
+        <button class="btn mono" id="zval" title="Reset to 100%">100%</button>
+        <button class="btn sq" id="zin" title="Zoom in (+)">+</button>
+        <button class="btn" id="fit" title="Fit level (F)">Fit</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="stage" id="stage">
+        <canvas id="cv"></canvas>
+        <div class="empty-note" id="note">
+          drop a level file here
+          <span class="hint">the game keeps them in<br>
+            <code>%AppData%\17Studio\Draw Rider\Documents\userlevels</code><br>
+            i.e. C:\Users\&lt;you&gt;\AppData\Roaming\17Studio\…
+          </span>
+        </div>
+        <div class="drop" id="drop">release to open</div>
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      </div>
+
+      <aside id="side">
+        <section>
+          <h2>Level</h2>
+          <dl class="kv" id="meta">
+            <dd class="muted" style="grid-column:1/-1;text-align:left">—</dd>
+          </dl>
+          <div id="parsewarn"></div>
+        </section>
+
+        <section>
+          <h2>Draw</h2>
+          <div class="toggles">
+            <button class="btn on" data-t="solid">Solid</button>
+            <button class="btn on" data-t="decor">Decor</button>
+            <button class="btn on" data-t="grid">Grid</button>
+            <button class="btn on" data-t="finish">Finish</button>
+            <button class="btn on" data-t="start">Start</button>
+            <button class="btn on" data-t="obj">Objects</button>
+            <button class="btn on" data-t="bg">Background</button>
+            <button class="btn" data-t="wire">Outlines</button>
+          </div>
+        </section>
+
+        <section>
+          <h2>Under cursor</h2>
+          <div id="pick"><span class="muted">hover a line or object</span></div>
+        </section>
+
+        <details class="fold" open>
+          <summary>
+            <h2>Objects</h2><span class="n" id="objsn"></span><span class="hint">click to hide</span>
+          </summary>
+          <div class="grouplist" id="objs"><span class="muted">—</span></div>
+        </details>
+
+        <details class="fold" open>
+          <summary>
+            <h2>Line groups</h2><span class="n" id="groupsn"></span><span class="hint">click to hide</span>
+          </summary>
+          <div class="grouplist" id="groups"><span class="muted">—</span></div>
+        </details>
+
+        <details class="fold">
+          <summary>
+            <h2>Raw file tail</h2>
+          </summary>
+          <pre class="raw" id="tail">—</pre>
+        </details>
+      </aside>
+    </main>
+
+    <footer class="status">
+      <span><span class="k">x</span> <b id="mx">—</b> <span class="k">y</span> <b id="my">—</b></span>
+      <span><span class="k">lines</span> <b id="cnt">0</b></span>
+      <span><span class="k">bounds</span> <b id="bb">—</b></span>
+      <span class="r">drag to pan · wheel to zoom · F fit · G grid</span>
+    </footer>
+
+    <!-- image -> level generator -->
+    <div class="modal" id="genwrap" hidden>
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gentitle">
+        <header>
+          <h2 id="gentitle">Image → level</h2>
+          <span class="muted" id="genname">no image</span>
+          <button class="btn sq" id="genx" title="Close (Esc)">×</button>
+        </header>
+
+        <div class="sheetbody">
+          <div class="genprev">
+            <div class="pvbox"><canvas id="genpv" width="1" height="1"
+                title="click a pixel to use its colour as the one to drop"></canvas></div>
+            <p class="muted" id="geninfo">choose a PNG or JPG</p>
+            <label class="btn wide">Choose image…<input type="file" id="genfile" hidden
+                accept="image/png,image/jpeg,image/webp,image/*"></label>
+            <p class="muted small">one image pixel → one record · a level file can also be dropped anywhere on the page
+            </p>
+          </div>
+
+          <div class="genopts">
+            <label class="row"><span>Width in pixels</span><input type="number" id="o_w" min="2" max="512" step="1"
+                value="96"></label>
+            <input class="rng" type="range" id="o_wr" min="2" max="512" step="1" value="96"
+              aria-label="Width in pixels">
+
+            <label class="row"><span>Pixel size (units)</span><input type="number" id="o_s" min="1" max="64" step="1"
+                value="10"></label>
+            <label class="row"><span>Layer</span>
+              <select id="o_layer">
+                <option value="decor">scenery lines</option>
+                <option value="solid">lines</option>
+              </select>
+            </label>
+
+            <hr>
+            <label class="row"><span>Alpha cut-off</span><input type="number" id="o_a" min="0" max="255" step="1"
+                value="8"></label>
+            <label class="row chk"><input type="checkbox" id="o_skip"><span>Drop this colour</span><input type="color"
+                id="o_key" value="#ffffff"></label>
+            <label class="row"><span>…tolerance</span><input type="number" id="o_tol" min="0" max="255" step="1"
+                value="12"></label>
+
+            <hr>
+            <label class="row"><span>Posterize (0 = off)</span><input type="number" id="o_p" min="0" max="32" step="1"
+                value="0"></label>
+            <label class="row"><span>Level background</span><input type="color" id="o_bg" value="#ffffff"></label>
+            <label class="row chk"><input type="checkbox" id="o_smooth" checked><span>Smooth downscale</span></label>
+            <label class="row chk"><input type="checkbox" id="o_merge"><span>Merge equal runs in a row</span></label>
+
+            <hr>
+            <label class="row"><span>Level name</span><input type="text" id="o_name" value="pixels"
+                maxlength="48"></label>
+          </div>
+        </div>
+
+        <footer>
+          <span class="genwarn" id="genwarn"></span>
+          <button class="btn" id="gendl" disabled title="Save the file into …\Draw Rider\Documents\userlevels">Download
+            level</button>
+          <button class="btn pri" id="gengo" disabled>Generate &amp; view</button>
+        </footer>
+      </div>
     </div>
   </div>
-</div>
 
-<script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
+
 </html>

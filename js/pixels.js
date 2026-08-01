@@ -64,6 +64,8 @@ export function buildRecords(px, opt) {
         y2: cy,
         c: [c2(run.r), c2(run.g), c2(run.b)],
         th: S,
+        cap: 0,
+        solid: !!o.solid,
       });
       run = null;
     };
@@ -97,18 +99,18 @@ export function buildRecords(px, opt) {
   return recs;
 }
 
-/* records + the camera/start/finish that go into the footer */
+/* A level in the shape write.js expects: lines plus the footer values.
+   No objects — a picture is lines and nothing else. */
 export function levelFromPixels(px, opt) {
   const o = Object.assign({}, DEFAULTS, opt);
   const S = Math.max(1, Math.round(o.size));
   const w = px.W * S,
     h = px.H * S;
   return {
-    recs: buildRecords(px, o),
-    solid: !!o.solid,
+    lines: buildRecords(px, o),
     bg: o.bg,
     cam: { x: o.ox + w / 2, y: o.oy + h / 2 },
-    zoom: 1,
+    zoom: { x: 1, y: 1 },
     start: { x: o.ox - 60, y: o.oy - 60 },
     finish: { x: o.ox + w + 60, y: o.oy - 60 },
   };
