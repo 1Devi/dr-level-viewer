@@ -102,7 +102,6 @@ addEventListener("keydown", e => {
   if(e.target && e.target.matches && e.target.matches("input")) return;
   const k = e.key.toLowerCase();
   if(k === "f"){ fit(); }
-  else if(k === "1"){ setZ(1); }
   else if(k === "g"){ document.querySelector('[data-t="grid"]').click(); }
   else if(k === "+" || k === "="){ setZ(state.z*1.4); }
   else if(k === "-"){ setZ(state.z/1.4); }

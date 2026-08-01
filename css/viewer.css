@@ -105,10 +105,16 @@ main{display:grid; grid-template-columns:1fr 322px; min-height:0}
 }
 .drop.show{opacity:1}
 .empty-note{
-  position:absolute; inset:0; display:grid; place-items:center; pointer-events:none;
+  position:absolute; inset:0; display:grid; place-content:center; justify-items:center;
+  pointer-events:none;
   text-align:center; color:var(--ink-3); font:13px/1.7 var(--mono);
 }
 .empty-note.hide{display:none}
+.empty-note .hint{
+  display:block; margin-top:14px; font:11.5px/1.8 var(--mono); opacity:.8;
+  pointer-events:auto; user-select:all;   /* so the path can be copied */
+}
+.empty-note code{font:inherit; color:var(--ink-2)}
 
 /* ---------- sidebar ---------- */
 aside{
@@ -174,7 +180,12 @@ pre.raw b{color:var(--ink); font-weight:600}
   font:11.5px/1.4 var(--mono); color:var(--ink-2);
   font-variant-numeric:tabular-nums;
 }
-.status b{color:var(--ink); font-weight:600}
+/* the numbers change on every mouse move, so each field keeps a fixed width
+   and the sections next to it stay put */
+.status b{color:var(--ink); font-weight:600; display:inline-block; text-align:left}
+#mx,#my{min-width:8ch}
+#cnt{min-width:6ch}
+#bb{min-width:12ch}
 .status .k{color:var(--ink-3)}
 .status .r{margin-left:auto; color:var(--ink-3)}
 

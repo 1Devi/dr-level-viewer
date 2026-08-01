@@ -41,12 +41,11 @@ export function draw(){
     return;
   }
 
-  ctx.fillStyle = rgb(lv.bg);
+  ctx.fillStyle = show.bg ? rgb(lv.bg) : "#fff";
   ctx.fillRect(0, 0, W, H);
 
-  const dark = lum(lv.bg) < 0.45;
+  const dark = show.bg && lum(lv.bg) < 0.45;
   if(show.grid) drawGrid(dark);
-  else $("gstep").textContent = "off";
 
   ctx.lineJoin = "round";
   for(const pass of [false, true]){          // decor first, then solid
@@ -141,10 +140,8 @@ function drawGrid(dark){
   const minor = 10, major = 100;
   const {W, H, z} = state;
   const [lx1, ly1] = toLvl(0, 0), [lx2, ly2] = toLvl(W, H);
-  const drawn = [];
   const g = (step, alpha, w) => {
     if(step*z < 2.5 || (lx2-lx1)/step > 6000) return;
-    drawn.push(step);
     ctx.strokeStyle = "rgba(" + (dark ? "255,255,255," : "0,0,0,") + alpha + ")";
     ctx.lineWidth = w;
     ctx.lineCap = "butt";
@@ -162,7 +159,6 @@ function drawGrid(dark){
   // alpha taken from editor screenshots: 229 and 178 on a white background
   g(minor, 0.102, 1);
   g(major, 0.302, 1);
-  $("gstep").textContent = drawn.length ? drawn.join(" / ") : "below 1px";
 }
 
 function finishBox(p){

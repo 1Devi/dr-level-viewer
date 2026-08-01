@@ -23,7 +23,6 @@ export function renderInfo(){
     q("camera", nm(lv.cam.x) + ", " + nm(lv.cam.y)) +
     q("zoom", '<span title="' + lv.zoom.x + " / " + lv.zoom.y + '">' +
               (+lv.zoom.x.toFixed(5)) + " / " + (+lv.zoom.y.toFixed(5)) + "</span>") +
-    q("1st number (ignored)", esc(lv.head)) +
     q("bounds", Math.round(b.x2-b.x1) + " × " + Math.round(b.y2-b.y1));
 
   const w = [];
