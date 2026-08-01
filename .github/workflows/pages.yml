@@ -25,6 +25,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true   # turn Pages on if the repository has it off
       - name: Upload the site (it is plain static files, no build step)
         uses: actions/upload-pages-artifact@v3
         with:
