@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DR Level Viewer — Draw Rider</title>
+<meta name="description" content="Open a Draw Rider level file and inspect it 1:1 in the browser — lines, objects, camera, raw tail.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/viewer.css">
+</head>
+<body>
+<div id="app">
+
+  <header class="bar">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <span><b>DR Level Viewer</b><span>Draw Rider format · 1:1 render</span></span>
+    </div>
+
+    <div class="grp">
+      <label class="btn pri">Open file<input type="file" id="file" hidden></label>
+    </div>
+    <span class="fname empty" id="fname">no file loaded</span>
+
+    <div class="spacer"></div>
+
+    <div class="grp">
+      <button class="btn sq" id="zout" title="Zoom out (−)">−</button>
+      <button class="btn mono" id="zval" title="Reset to 100% (1)">100%</button>
+      <button class="btn sq" id="zin" title="Zoom in (+)">+</button>
+      <button class="btn" id="fit" title="Fit level (F)">Fit</button>
+      <button class="btn" id="png" title="Save PNG">PNG</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="stage" id="stage">
+      <canvas id="cv"></canvas>
+      <div class="empty-note" id="note">drop a level file here</div>
+      <div class="drop" id="drop">release to open</div>
+    </div>
+
+    <aside id="side">
+      <section>
+        <h2>Level</h2>
+        <dl class="kv" id="meta"><dd class="muted" style="grid-column:1/-1;text-align:left">—</dd></dl>
+        <div id="parsewarn"></div>
+      </section>
+
+      <section>
+        <h2>Draw</h2>
+        <div class="toggles">
+          <button class="btn on" data-t="solid">Solid</button>
+          <button class="btn on" data-t="decor">Decor</button>
+          <button class="btn on" data-t="grid">Grid</button>
+          <button class="btn on" data-t="finish">Finish</button>
+          <button class="btn on" data-t="start">Start</button>
+          <button class="btn on" data-t="obj">Objects</button>
+          <button class="btn" data-t="wire">Outlines</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Objects · click to hide</h2>
+        <div class="grouplist" id="objs"><span class="muted">—</span></div>
+      </section>
+
+      <section>
+        <h2>Line groups · click to hide</h2>
+        <div class="grouplist" id="groups"><span class="muted">—</span></div>
+      </section>
+
+      <section>
+        <h2>Under cursor</h2>
+        <div id="pick"><span class="muted">hover a line or object</span></div>
+      </section>
+
+      <section>
+        <h2>Raw file tail</h2>
+        <pre class="raw" id="tail">—</pre>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="status">
+    <span><span class="k">x</span> <b id="mx">—</b> <span class="k">y</span> <b id="my">—</b></span>
+    <span><span class="k">lines</span> <b id="cnt">0</b></span>
+    <span><span class="k">bounds</span> <b id="bb">—</b></span>
+    <span><span class="k">grid</span> <b id="gstep">—</b></span>
+    <span class="r">drag to pan · wheel to zoom · F fit · 1 reset · G grid</span>
+  </footer>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
