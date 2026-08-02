@@ -78,6 +78,16 @@ export const tool = () => byTool[state.tool] || byTool.move;
 const f1 = (v) => v.toFixed(1);
 const f2 = (v) => v.toFixed(2);
 const round1 = (v) => Math.round(v * 10) / 10;
+
+/* The grid the game's editor draws, and the step it puts points on: levels
+   drawn in it have 89.6% of object coordinates and half of all line ends on
+   multiples of ten, and nothing on twenty. With the grid switched on, every
+   point a tool puts down lands on it. */
+const GRID = 10;
+const onGrid = () => !!state.show.grid;
+const snap = (v) => (onGrid() ? Math.round(v / GRID) * GRID : round1(v));
+/* moving something keeps its shape: the step is snapped, not the ends */
+const snapBy = (d) => (onGrid() ? Math.round(d / GRID) * GRID : round1(d));
 const deg = (a) => Math.round(((a % 360) + 360) % 360);
 
 function srcOf(l) {
@@ -329,7 +339,7 @@ export function onPointer(kind, mx, my, shiftKey) {
   // a curve waiting to be bent follows the pointer until it is clicked
   if (bend) {
     if (kind === "move") {
-      bend.off = [mx - (bend.a[0] + bend.b[0]) / 2, my - (bend.a[1] + bend.b[1]) / 2];
+      bend.off = [snap(mx) - (bend.a[0] + bend.b[0]) / 2, snap(my) - (bend.a[1] + bend.b[1]) / 2];
       state.ghost = curveLines(bend.a, bend.b, bend.off);
       if (redraw) redraw();
     } else if (kind === "down") {
@@ -349,11 +359,11 @@ export function onPointer(kind, mx, my, shiftKey) {
     if (kind === "down") {
       // the magnet is the whole of the snapping there is: a new stroke starts
       // where the last one ended, so a chain closes with no hairline gap
-      drag = { a: e.magnet && lastEnd ? lastEnd.slice() : [round1(mx), round1(my)] };
+      drag = { a: e.magnet && lastEnd ? lastEnd.slice() : [snap(mx), snap(my)] };
       return true;
     }
     if (!drag) return true;
-    const b = [round1(mx), round1(my)];
+    const b = [snap(mx), snap(my)];
     if (kind === "move") {
       state.ghost = t.curve ? curveLines(drag.a, b, [0, 0]) : [mkLine(drag.a[0], drag.a[1], b[0], b[1])];
       if (redraw) redraw();
@@ -422,8 +432,8 @@ export function onPointer(kind, mx, my, shiftKey) {
   if (t.id === "object") {
     const def = byId[e.obj] || byId.turbo;
     if (kind === "down") {
-      const x = round1(mx),
-        y = round1(my);
+      const x = snap(mx),
+        y = snap(my);
       if (placing && placing.stage === 1) {
         // the far end of a portal
         delete placing.o.half;
@@ -504,8 +514,8 @@ export function onPointer(kind, mx, my, shiftKey) {
     }
     if (!drag) return true;
     if (kind === "move") {
-      const dx = round1(mx - drag.from[0]),
-        dy = round1(my - drag.from[1]);
+      const dx = snapBy(mx - drag.from[0]),
+        dy = snapBy(my - drag.from[1]);
       if (!dx && !dy) return true;
       drag.from = [drag.from[0] + dx, drag.from[1] + dy];
       drag.moved = true;
@@ -552,7 +562,7 @@ export function onPointer(kind, mx, my, shiftKey) {
         }
         if (typing.rows.some((r) => r.length)) commitText();
       }
-      typing = { x: round1(mx), y: round1(my), rows: [""], r: 0, c: 0, sel: null };
+      typing = { x: snap(mx), y: snap(my), rows: [""], r: 0, c: 0, sel: null };
       drag = null;
       showText();
       return true;
@@ -592,7 +602,7 @@ export function onPointer(kind, mx, my, shiftKey) {
 
   if (t.id === "start" || t.id === "finish") {
     const before = { x: state.lv[t.id].x, y: state.lv[t.id].y };
-    commit({ t: "set", key: t.id, before, after: { x: round1(mx), y: round1(my) } });
+    commit({ t: "set", key: t.id, before, after: { x: snap(mx), y: snap(my) } });
     return true;
   }
   return true;
@@ -1094,7 +1104,7 @@ export function initEditor(drawFn, infoFn) {
   $("tools").innerHTML =
     TOOLS.map((t) => '<button class="tool" data-tool="' + t.id + '" title="tool: ' + t.label + '">' + ICON[t.icon] + "</button>").join("") +
     '<span class="tsep"></span>' +
-    '<button class="tool" id="gridtool" title="grid">' +
+    '<button class="tool" id="gridtool" title="grid · points snap to it while it is on">' +
     ICON.grid +
     "</button>" +
     '<button class="tool" id="magnettool" title="magnet: start where the last line ended">' +

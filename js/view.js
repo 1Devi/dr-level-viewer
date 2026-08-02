@@ -207,9 +207,19 @@ function stroke(l, wire, color, extra) {
   }
 }
 
+/* The game's own grid is a shader (filter.custom.setka in the apk):
+
+     if(mod(x, grid*10) <= 2)  colour 0.7 grey, so a 2px line
+     if(mod(x, grid)    <= 1)  colour 0.9 grey, so a 1px line
+
+   Same two steps in a ten-to-one ratio, and the greys are what black at 10.2%
+   and 30.2% comes to over white — which is where these alphas came from in the
+   first place. What is reproduced here is the width of each line and the ratio;
+   what is deliberately not is the fixed grey: on a dark level background the
+   lines invert, or they would vanish. */
 function drawGrid(dark) {
-  // the editor always draws a 10 and a 100 step; below ~2.5 px the grid merges
-  // into a solid wash, so the fine step is dropped there
+  // below ~2.5 px a step merges into a solid wash, so the fine one is dropped
+  // there — the shader has no such guard because the game never zooms that far
   const minor = 10,
     major = 100;
   const { W, H, z } = state;
@@ -221,21 +231,22 @@ function drawGrid(dark) {
     ctx.lineWidth = w;
     ctx.lineCap = "butt";
     ctx.beginPath();
+    // a 1px line wants the half-pixel offset to stay crisp, a 2px one does not
+    const half = w % 2 ? 0.5 : 0;
     for (let x = Math.ceil(lx1 / step) * step; x <= lx2; x += step) {
-      const sx = Math.round(toScr(x, 0)[0]) + 0.5;
+      const sx = Math.round(toScr(x, 0)[0]) + half;
       ctx.moveTo(sx, 0);
       ctx.lineTo(sx, H);
     }
     for (let y = Math.ceil(ly1 / step) * step; y <= ly2; y += step) {
-      const sy = Math.round(toScr(0, y)[1]) + 0.5;
+      const sy = Math.round(toScr(0, y)[1]) + half;
       ctx.moveTo(0, sy);
       ctx.lineTo(W, sy);
     }
     ctx.stroke();
   };
-  // alpha taken from editor screenshots: 229 and 178 on a white background
-  g(minor, 0.102, 1);
-  g(major, 0.302, 1);
+  g(minor, 0.102, 1); // 0.9 grey on white, 1px — as the shader draws it
+  g(major, 0.302, 2); // 0.7 grey on white, 2px
 }
 
 function finishBox(p) {
