@@ -179,33 +179,6 @@ them off silently alters the level.
 
 ---
 
-## Traps
-
-**A record whose `StartX` prints as exactly `1.0` breaks saving in the in-game
-editor.** In Lua `t[1.0]` and `t[1]` are the same key, and the record appears to
-collide with the first slot of some internal array: the editor drops it and the
-file is cut off with it. Checked across six levels — no such record and the
-level saves, one or more and it does not. The cure is a 0.1 shift, applied to
-**both** ends, or the length changes.
-
-**Campaign levels are a different format.** After the version row they carry
-**three more numbers** — the times for gold, silver and bronze — and only then
-the line counts. Telling them apart by value does not work (a medal time can be
-a round number) and neither does counting fields in the first record (see the
-single-number row above). What does work is trying both layouts and keeping the
-one whose counts leave a footer-sized tail behind.
-
-**Versions `d9.3` and `d9.4` are old exports.** The game loads those through a
-compatibility path where saving behaves unpredictably. Always write `d10.0`.
-
-**Before the `z` and `c` sections the loader reads an optional number and throws
-it away**, rewinding if a letter comes next. There is no need to write it.
-
-**Record order.** All solid lines first, then all scenery; the counts in the
-header must match the records that follow.
-
----
-
 ## Object format (the `myobjects` folder)
 
 Three differences:
@@ -233,10 +206,3 @@ d10.0
 
 A 20-row footer instead of 24: **no start and no finish**. Geometry is local,
 x runs right from zero and the object sits entirely below zero on y.
-
----
-
-## Axes
-
-Y grows **downwards**, as on screen and as in Free Rider HD. Nothing needs
-flipping when moving between those two games.
