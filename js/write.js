@@ -24,12 +24,7 @@ const f2 = (v) => (Number.isFinite(v) ? v : 0).toFixed(2);
 const f3 = (v) => (Number.isFinite(v) ? v : 0).toFixed(3);
 const int = (v) => String(Math.round(Number.isFinite(v) ? v : 0));
 /* zoom is the only field that is sometimes 1 and sometimes 1.21 */
-/* roundedF is not a whole number: the game writes 7.5 for a line of width 15 */
-const fc = (v) => String(+(+v).toFixed(2));
-
-/* zoom comes in at full precision — 1.0919997692108 in a level the game wrote —
-   and goes back out the same */
-const fz = (v) => String(+v);
+const raw = (v) => String(+v);
 
 const isBad = (x) => f1(x) === "1.0";
 
@@ -86,8 +81,8 @@ export function writeLevel(lv) {
   const L = [head, String(solid.length), String(decor.length)];
 
   for (const l of solid.concat(decor)) {
-    let row = f1(l.x1) + " " + f2(l.c[0]) + " " + f2(l.c[1]) + " " + f2(l.c[2]) + " " + Math.max(1, Math.round(l.th || 5));
-    if (l.cap > 0) row += " " + fc(l.cap); // roundedF, written only when set
+    let row = f1(l.x1) + " " + f2(l.c[0]) + " " + f2(l.c[1]) + " " + f2(l.c[2]) + " " + raw(l.th > 0 ? l.th : 5);
+    if (l.cap > 0) row += " " + raw(l.cap); // roundedF, written only when set
     L.push(row, f1(l.y1), f1(l.x2), f1(l.y2));
   }
 
@@ -98,7 +93,7 @@ export function writeLevel(lv) {
   const objRow = (d, o, v, k) => {
     const row = objField(d, v, k);
     const ex = o.extra && o.extra[k];
-    return ex && ex.length ? row + " " + ex.map((x) => String(+(+x).toFixed(3))).join(" ") : row;
+    return ex && ex.length ? row + " " + ex.map(raw).join(" ") : row;
   };
   const put = (d) => {
     const items = list(d.id);
@@ -117,7 +112,7 @@ export function writeLevel(lv) {
 
   L.push(f1(lv.finish.x), f1(lv.finish.y));
   L.push(f1(lv.cam.x), f1(lv.cam.y));
-  L.push(fz(zx === undefined ? 1 : zx), fz(zy === undefined ? 1 : zy));
+  L.push(raw(zx === undefined ? 1 : zx), raw(zy === undefined ? 1 : zy));
   for (const d of OBJ) if (d.grp === "A") put(d);
   L.push(f1(lv.start.x), f1(lv.start.y));
   // the optional number the game reads and discards is not written: a letter

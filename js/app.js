@@ -72,6 +72,12 @@ $("file").addEventListener("change", (e) => {
   take(e.target.files[0]);
   e.target.value = "";
 });
+
+/* the empty stage is a big "open a file" button — except over the path itself,
+   which is there to be selected and copied */
+$("note").addEventListener("click", (e) => {
+  if (!(e.target.closest && e.target.closest(".hint"))) $("file").click();
+});
 for (const b of document.querySelectorAll("[data-t]")) {
   b.addEventListener("click", () => {
     const k = b.dataset.t;

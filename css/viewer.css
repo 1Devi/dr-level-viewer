@@ -446,10 +446,14 @@ main {
   display: grid;
   place-content: center;
   justify-items: center;
-  pointer-events: none;
+  cursor: pointer;
   text-align: center;
   color: var(--ink-3);
   font: 13px/1.7 var(--mono);
+}
+
+.empty-note:hover {
+  color: var(--ink-2)
 }
 
 .empty-note.hide {
@@ -461,7 +465,7 @@ main {
   margin-top: 14px;
   font: 11.5px/1.8 var(--mono);
   opacity: .8;
-  pointer-events: auto;
+  cursor: text;
   user-select: all;
   /* so the path can be copied */
 }

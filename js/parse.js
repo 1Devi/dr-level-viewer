@@ -44,6 +44,8 @@ export function parseLevel(text) {
 
   const total = nSolid + nDecor;
   const lines = [];
+  const numeric = (r) => r !== undefined && /^\s*[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?\s*$/.test(r);
+  let bad = 0; // broken rows reported, capped
   let i = at + 2;
   let maxCh = 0;
 
@@ -53,6 +55,10 @@ export function parseLevel(text) {
       break;
     }
     const p = L[i].trim().split(/\s+/);
+    if (bad < 8 && [p[0], L[i + 1], L[i + 2], L[i + 3]].some((r) => !numeric(r))) {
+      warn.push("row " + (i + 1) + ": a coordinate is not a number, read as 0");
+      bad++;
+    }
     // the loader fills in what a row leaves out: no width means 5, no colour
     // means black. Old levels lean on that, so only a partial row is odd.
     if (p.length > 1 && p.length < 5) warn.push("row " + (i + 1) + ": expected 1 or 5-6 fields, got " + p.length);
@@ -143,13 +149,20 @@ export function parseLevel(text) {
   probe();
 
   const sections = [];
+  /* The z and c sections are optional in older files, which simply do not have
+     them. Reading whatever letter happens to be there as if it were z would eat
+     the v / m / f / d rows behind it and lose the vehicle, the mode and the
+     background, so a row with the wrong letter is left alone. */
   const readKeyed = (d) => {
     if (!isKey()) return [];
     const t = L[i].trim();
     const m = /^([A-Za-z])[ \t]*(.*)$/.exec(t);
+    if (m[1].toLowerCase() !== d.key) {
+      warn.push('no "' + d.key + '" section, the file goes straight to "' + m[1] + '"');
+      return [];
+    }
     i++;
     sections.push({ key: m[1].toLowerCase(), args: m[2].trim(), raw: t });
-    if (m[1].toLowerCase() !== d.key) warn.push('expected section "' + d.key + '", file has "' + m[1] + '"');
     const n = Math.max(0, parseInt(m[2], 10) || 0);
     return readRecords(d, n);
   };
