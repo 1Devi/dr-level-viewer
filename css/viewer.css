@@ -180,7 +180,16 @@ body {
   white-space: nowrap;
 }
 
-.btn:hover {
+.btn[disabled] {
+  opacity: .4;
+  cursor: default
+}
+
+.btn[disabled]:hover {
+  border-color: var(--edge-2)
+}
+
+.btn:not([disabled]):hover {
   border-color: var(--ink-3)
 }
 
@@ -463,6 +472,10 @@ main {
 }
 
 /* ---------- editor ---------- */
+.tools[hidden] {
+  display: none
+}
+
 .tools {
   position: absolute;
   left: 8px;
@@ -746,6 +759,10 @@ h2 {
 
 /* collapsible sections — the lists get long, and everything below them
    would otherwise be a scroll away */
+details.fold[hidden] {
+  display: none
+}
+
 details.fold {
   border-bottom: 1px solid var(--edge);
   padding: 11px 13px

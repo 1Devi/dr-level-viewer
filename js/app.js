@@ -14,6 +14,18 @@ import { initMenu, refreshMenu } from "./menu.js";
 import { saveLevel, savePng } from "./save.js";
 import { toast } from "./toast.js";
 
+/* There is nothing to edit, name, colour or hover over until a level exists,
+   so everything that acts on one stays out of the way until then. */
+const LEVEL_ONLY = ["tools", "fname", "sec_tool", "sec_level", "sec_vehicle", "sec_draw", "sec_pick", "sec_objects", "sec_groups", "sec_tail"];
+/* the view controls stay in place but go dead — they are part of the frame,
+   and a frame that jumps about as files open is worse than a dim button */
+const LEVEL_DIM = ["zout", "zval", "zin", "fit"];
+
+function chrome() {
+  for (const id of LEVEL_ONLY) $(id).hidden = !state.lv;
+  for (const id of LEVEL_DIM) $(id).disabled = !state.lv;
+}
+
 /* ---------- loading ---------- */
 export function load(text, name, refit) {
   let parsed;
@@ -38,6 +50,7 @@ export function load(text, name, refit) {
   refreshMenu();
   resetHistory();
   refreshEditor();
+  chrome();
 }
 
 /* An image opens whichever generator is in front, a .json goes to the
@@ -87,9 +100,17 @@ initMenu({
   new: newLevel,
 });
 
-$("zin").addEventListener("click", () => setZ(state.z * 1.4));
-$("zout").addEventListener("click", () => setZ(state.z / 1.4));
-$("zval").addEventListener("click", () => setZ(1));
+// disabled buttons do not fire in a browser, but the same handlers are reachable
+// from the keyboard, so the guard lives here rather than on the button
+$("zin").addEventListener("click", () => {
+  if (state.lv) setZ(state.z * 1.4);
+});
+$("zout").addEventListener("click", () => {
+  if (state.lv) setZ(state.z / 1.4);
+});
+$("zval").addEventListener("click", () => {
+  if (state.lv) setZ(1);
+});
 $("fit").addEventListener("click", fit);
 
 cv.addEventListener(
@@ -204,9 +225,9 @@ addEventListener("keydown", (e) => {
     } else if (k === "f") {
       fit();
     } else if (k === "=" || k === "+") {
-      setZ(state.z * 1.4);
+      if (state.lv) setZ(state.z * 1.4);
     } else if (k === "-" || k === "_") {
-      setZ(state.z / 1.4);
+      if (state.lv) setZ(state.z / 1.4);
     } else return;
     e.preventDefault();
     return;
@@ -249,5 +270,6 @@ loadSprites(draw);
 initImageGen(load);
 initAbout();
 initEditor(draw, renderInfo);
+chrome();
 initGeom(load);
 initView();

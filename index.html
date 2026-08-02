@@ -85,7 +85,7 @@
           <div id="parsewarn"></div>
         </section>
 
-        <section>
+        <section id="sec_tool">
           <h2>Tool</h2>
           <div class="editrow">
             <span class="toolname" id="toolname">tool: move and zoom</span>
@@ -144,7 +144,7 @@
           </div>
         </section>
 
-        <section>
+        <section id="sec_level">
           <h2>Level</h2>
           <div class="editrow" id="row_mode">
             <label class="ef"><span>mode</span><select id="e_mode"></select></label>
@@ -154,12 +154,12 @@
           </div>
         </section>
 
-        <section>
+        <section id="sec_vehicle">
           <h2>Vehicle</h2>
           <div class="vehicles" id="vehicles"></div>
         </section>
 
-        <section>
+        <section id="sec_draw">
           <h2>Draw</h2>
           <div class="toggles">
             <button class="btn on" data-t="solid">Lines</button>
@@ -173,26 +173,26 @@
           </div>
         </section>
 
-        <section>
+        <section id="sec_pick">
           <h2>Under cursor</h2>
           <div id="pick"><span class="muted">hover a line or object</span></div>
         </section>
 
-        <details class="fold" open>
+        <details class="fold" id="sec_objects" open>
           <summary>
             <h2>Objects</h2><span class="n" id="objsn"></span><span class="hint">click to hide</span>
           </summary>
           <div class="grouplist" id="objs"><span class="muted">—</span></div>
         </details>
 
-        <details class="fold" open>
+        <details class="fold" id="sec_groups" open>
           <summary>
             <h2>Line groups</h2><span class="n" id="groupsn"></span><span class="hint">click to hide</span>
           </summary>
           <div class="grouplist" id="groups"><span class="muted">—</span></div>
         </details>
 
-        <details class="fold">
+        <details class="fold" id="sec_tail">
           <summary>
             <h2>Raw file tail</h2>
           </summary>
