@@ -65,8 +65,10 @@ export function initMenu(actions) {
     if (fn) fn();
   });
 
+  // anything outside a menu closes it, including the other buttons that sit in
+  // the bar without a dropdown of their own
   addEventListener("pointerdown", (e) => {
-    if (live && !bar.contains(e.target)) close();
+    if (live && !(e.target.closest && e.target.closest(".menu"))) close();
   });
   addEventListener("blur", () => close());
 

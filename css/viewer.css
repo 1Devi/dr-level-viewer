@@ -387,9 +387,12 @@ main {
 }
 
 .toast {
-  position: absolute;
+  /* fixed and above the modals: a message about what just happened is useless
+     behind the sheet that triggered it */
+  position: fixed;
   left: 50%;
-  bottom: 16px;
+  bottom: 44px;
+  z-index: 60;
   transform: translate(-50%, 8px);
   max-width: calc(100% - 32px);
   padding: 7px 12px;
@@ -735,6 +738,61 @@ pre.raw b {
   white-space: nowrap
 }
 
+.sheet.narrow {
+  width: min(520px, 100%)
+}
+
+.aboutbody {
+  padding: 13px 15px 16px;
+  overflow: auto;
+  min-height: 0;
+  font: 12.5px/1.65 var(--ui)
+}
+
+.aboutbody p {
+  margin: 0 0 11px;
+  color: var(--ink-2)
+}
+
+.aboutbody b {
+  color: var(--ink)
+}
+
+.aboutbody h3 {
+  margin: 16px 0 7px;
+  font: 600 10px/1 var(--mono);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.aboutbody code {
+  font: 11.5px/1 var(--mono);
+  color: var(--ink)
+}
+
+.aboutbody a {
+  color: var(--accent)
+}
+
+.aboutbody .by {
+  font: 600 14px/1.4 var(--mono);
+  color: var(--ink);
+  letter-spacing: .02em
+}
+
+.kv.keys dt {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink)
+}
+
+.kv.keys dd {
+  text-align: left;
+  font-family: var(--ui);
+  color: var(--ink-2)
+}
+
 .sheetbody {
   display: grid;
   grid-template-columns: 1fr 300px;
@@ -756,17 +814,23 @@ pre.raw b {
   place-items: center;
   min-height: 180px;
   padding: 10px;
+  overflow: hidden;
   background: var(--sunk);
   border: 1px solid var(--edge);
   border-radius: var(--r);
 }
 
-#genpv {
+#genpv,
+#gzpv {
   display: block;
   max-width: 100%;
-  image-rendering: pixelated;
-  cursor: crosshair;
+  height: auto;
   border: 1px solid var(--edge-2);
+}
+
+#genpv {
+  image-rendering: pixelated;
+  cursor: crosshair
 }
 
 .genprev .small {
@@ -782,6 +846,46 @@ pre.raw b {
   display: block;
   width: 100%;
   text-align: center
+}
+
+.gzrow {
+  display: flex;
+  gap: 6px
+}
+
+.gzrow .btn.wide {
+  flex: 1 1 0;
+  min-width: 0
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  padding: 4px 7px;
+  border: 1px solid var(--edge-2);
+  border-radius: var(--r);
+  background: var(--panel-2);
+  font: 11px/1 var(--ui);
+  color: var(--ink-2);
+}
+
+.chip:has(input:checked) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent)
+}
+
+.chip input {
+  accent-color: var(--accent);
+  margin: 0
 }
 
 .genopts {
@@ -871,6 +975,7 @@ pre.raw b {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
   padding: 10px 12px;
   border-top: 1px solid var(--edge);
 }
@@ -887,6 +992,61 @@ pre.raw b {
 }
 
 @media (max-width:700px) {
+  .sheet.narrow {
+    width: min(520px, 100%)
+  }
+
+  .aboutbody {
+    padding: 13px 15px 16px;
+    overflow: auto;
+    min-height: 0;
+    font: 12.5px/1.65 var(--ui)
+  }
+
+  .aboutbody p {
+    margin: 0 0 11px;
+    color: var(--ink-2)
+  }
+
+  .aboutbody b {
+    color: var(--ink)
+  }
+
+  .aboutbody h3 {
+    margin: 16px 0 7px;
+    font: 600 10px/1 var(--mono);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .aboutbody code {
+    font: 11.5px/1 var(--mono);
+    color: var(--ink)
+  }
+
+  .aboutbody a {
+    color: var(--accent)
+  }
+
+  .aboutbody .by {
+    font: 600 14px/1.4 var(--mono);
+    color: var(--ink);
+    letter-spacing: .02em
+  }
+
+  .kv.keys dt {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink)
+  }
+
+  .kv.keys dd {
+    text-align: left;
+    font-family: var(--ui);
+    color: var(--ink-2)
+  }
+
   .sheetbody {
     grid-template-columns: 1fr
   }

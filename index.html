@@ -31,12 +31,18 @@
             <button class="mitem" type="button" role="menuitem" data-a="image"
               title="Build a level out of a JPG/PNG — one image pixel per record">
               Pixelate image<span class="mk">Ctrl+P</span></button>
+            <button class="mitem" type="button" role="menuitem" data-a="geom"
+              title="Recreate a JPG/PNG out of shapes, or load a Geometrize JSON">
+              Geometrize image<span class="mk">Ctrl+Shift+G</span></button>
             <hr>
             <button class="mitem" type="button" role="menuitem" data-a="save" data-need="level"
               title="Write the level back out: d10.0 footer, guarded against the x = 1.0 save bug">
               Save level<span class="mk">Ctrl+S</span></button>
             <button class="mitem" type="button" role="menuitem" data-a="png" data-need="level">
               Save PNG<span class="mk">Ctrl+Shift+S</span></button>
+            <hr>
+            <button class="mitem" type="button" role="menuitem" data-a="about" title="About this project">
+              About<span class="mk">F1</span></button>
           </div>
         </div>
       </nav>
@@ -47,9 +53,9 @@
       <div class="spacer"></div>
 
       <div class="grp">
-        <button class="btn sq" id="zout" title="Zoom out (−)">−</button>
+        <button class="btn sq" id="zout" title="Zoom out (Ctrl+−)">−</button>
         <button class="btn mono" id="zval" title="Reset to 100%">100%</button>
-        <button class="btn sq" id="zin" title="Zoom in (+)">+</button>
+        <button class="btn sq" id="zin" title="Zoom in (Ctrl++)">+</button>
         <button class="btn" id="fit" title="Fit level (F)">Fit</button>
       </div>
     </header>
@@ -65,7 +71,6 @@
           </span>
         </div>
         <div class="drop" id="drop">release to open</div>
-        <div class="toast" id="toast" role="status" aria-live="polite"></div>
       </div>
 
       <aside id="side">
@@ -80,9 +85,9 @@
         <section>
           <h2>Draw</h2>
           <div class="toggles">
-            <button class="btn on" data-t="solid">Solid</button>
-            <button class="btn on" data-t="decor">Decor</button>
-            <button class="btn on" data-t="grid">Grid</button>
+            <button class="btn on" data-t="solid">Lines</button>
+            <button class="btn on" data-t="decor">Scenery lines</button>
+            <button class="btn on" data-t="grid" title="Toggle grid (G)">Grid</button>
             <button class="btn on" data-t="finish">Finish</button>
             <button class="btn on" data-t="start">Start</button>
             <button class="btn on" data-t="obj">Objects</button>
@@ -119,11 +124,13 @@
       </aside>
     </main>
 
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
     <footer class="status">
       <span><span class="k">x</span> <b id="mx">—</b> <span class="k">y</span> <b id="my">—</b></span>
       <span><span class="k">lines</span> <b id="cnt">0</b></span>
       <span><span class="k">bounds</span> <b id="bb">—</b></span>
-      <span class="r">drag to pan · wheel to zoom · F fit · G grid</span>
+      <span class="r">drag to pan · wheel to zoom</span>
     </footer>
 
     <!-- image -> level generator -->
@@ -188,6 +195,143 @@
             level</button>
           <button class="btn pri" id="gengo" disabled>Generate &amp; view</button>
         </footer>
+      </div>
+    </div>
+
+    <!-- geometrize -> level -->
+    <div class="modal" id="gzwrap" hidden>
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gztitle">
+        <header>
+          <h2 id="gztitle">Geometrize → level</h2>
+          <span class="muted" id="gzname">no image</span>
+          <button class="btn sq" id="gzx" title="Close (Esc)">×</button>
+        </header>
+
+        <div class="sheetbody">
+          <div class="genprev">
+            <div class="pvbox"><canvas id="gzpv" width="1" height="1"></canvas></div>
+            <p class="muted" id="gzinfo">choose an image, or load a Geometrize JSON</p>
+            <div class="gzrow">
+              <label class="btn wide">Choose image…<input type="file" id="gzfile" hidden
+                  accept="image/png,image/jpeg,image/webp,image/*"></label>
+              <label class="btn wide">Load JSON…<input type="file" id="gzjson" hidden
+                  accept="application/json,.json"></label>
+            </div>
+            <p class="muted small">shapes are fitted by hill-climbing, the way
+              Geometrize does it · triangles, ellipses and curves become several
+              lines each, the other shapes one</p>
+          </div>
+
+          <div class="genopts">
+            <label class="row"><span>Working width (px)</span><input type="number" id="g_res" min="32" max="512"
+                step="1" value="200"></label>
+            <label class="row"><span>Shapes</span><input type="number" id="g_max" min="1" max="20000" step="10"
+                value="300"></label>
+            <label class="row"><span>Shape opacity</span><input type="number" id="g_alpha" min="1" max="255" step="1"
+                value="128"></label>
+
+            <hr>
+            <div class="row"><span>Shapes used</span></div>
+            <div class="chips">
+              <label class="chip"><input type="checkbox" id="g_t0"><span>rectangle</span></label>
+              <label class="chip"><input type="checkbox" id="g_t1" checked><span>rotated rect</span></label>
+              <label class="chip"><input type="checkbox" id="g_t2"><span>triangle</span></label>
+              <label class="chip"><input type="checkbox" id="g_t3"><span>ellipse</span></label>
+              <label class="chip"><input type="checkbox" id="g_t4"><span>rotated ellipse</span></label>
+              <label class="chip"><input type="checkbox" id="g_t5" checked><span>circle</span></label>
+              <label class="chip"><input type="checkbox" id="g_t6"><span>line</span></label>
+              <label class="chip"><input type="checkbox" id="g_t7"><span>quadratic bezier</span></label>
+            </div>
+            <label class="row"><span>Bands per curve</span><input type="number" id="g_detail" min="1" max="64" step="1"
+                value="8"></label>
+
+            <hr>
+            <label class="row"><span>Candidates per shape</span><input type="number" id="g_cand" min="1" max="500"
+                step="1" value="50"></label>
+            <label class="row"><span>Mutations per shape</span><input type="number" id="g_mut" min="0" max="1000"
+                step="10" value="100"></label>
+
+            <hr>
+            <label class="row"><span>Scale (units per px)</span><input type="number" id="g_scale" min="0.1" max="64"
+                step="0.5" value="3"></label>
+            <label class="row"><span>Layer</span>
+              <select id="g_layer">
+                <option value="decor">scenery lines</option>
+                <option value="solid">lines</option>
+              </select>
+            </label>
+            <label class="row chk"><input type="checkbox" id="g_bgauto" checked><span>Background from image</span><input
+                type="color" id="g_bg" value="#ffffff"></label>
+            <label class="row"><span>Level name</span><input type="text" id="g_name" value="geometrized"
+                maxlength="48"></label>
+          </div>
+        </div>
+
+        <footer>
+          <span class="genwarn" id="gzwarn"></span>
+          <button class="btn" id="gzreset" title="Start the fitting over">Reset</button>
+          <button class="btn" id="gzrun" disabled>Run</button>
+          <button class="btn" id="gzjsonsave" disabled title="Geometrize-compatible shape data">Save JSON</button>
+          <button class="btn" id="gzdl" disabled>Download level</button>
+          <button class="btn pri" id="gzgo" disabled>Generate &amp; view</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- about -->
+    <div class="modal" id="abwrap" hidden>
+      <div class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="abtitle">
+        <header>
+          <h2 id="abtitle">About</h2>
+          <div class="spacer"></div>
+          <button class="btn sq" id="abx" title="Close (Esc)">×</button>
+        </header>
+
+        <div class="aboutbody">
+          <p><b>DR Level Viewer</b> opens a <b>Draw Rider</b> level file and draws it
+            the way the game does — the same rotated rectangles, the same round ends,
+            one unit to one pixel. Nothing is uploaded anywhere: files are read in the
+            browser and never leave the machine.</p>
+
+          <p>It also builds levels. <b>Pixelate image</b> turns a picture into one
+            record per pixel. <b>Geometrize image</b> recreates it out of shapes,
+            fitting them one at a time, and reads or writes the same shape JSON the
+            Geometrize web demo uses.</p>
+
+          <h3>Made by</h3>
+          <p class="by">iDevi &amp; xLBHAx</p>
+
+          <h3>Shortcuts</h3>
+          <dl class="kv keys">
+            <dt>Ctrl+O</dt>
+            <dd>open a level file</dd>
+            <dt>Ctrl+S</dt>
+            <dd>save the level</dd>
+            <dt>Ctrl+Shift+S</dt>
+            <dd>save a PNG of the view</dd>
+            <dt>Ctrl+P</dt>
+            <dd>pixelate an image</dd>
+            <dt>Ctrl+Shift+G</dt>
+            <dd>geometrize an image</dd>
+            <dt>F</dt>
+            <dd>fit the level to the window</dd>
+            <dt>G</dt>
+            <dd>toggle the grid</dd>
+            <dt>Ctrl+ + / −</dt>
+            <dd>zoom in and out</dd>
+            <dt>F1</dt>
+            <dd>this window</dd>
+          </dl>
+
+          <h3>Credits</h3>
+          <p>Sprites in <code>assets/sprites</code> are from Draw Rider by 17Studio.
+            The shape fitting follows
+            <a href="https://www.geometrize.co.uk/" target="_blank" rel="noreferrer">Geometrize</a>
+            by Sam Twidale, itself based on
+            <a href="https://github.com/fogleman/primitive" target="_blank" rel="noreferrer">primitive</a>
+            by Michael Fogleman.
+          </p>
+        </div>
       </div>
     </div>
   </div>

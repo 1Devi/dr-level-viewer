@@ -40,6 +40,13 @@ const num = (el, a, b, d) => {
 };
 const group = (n) => n.toLocaleString("en-US").replace(/,/g, " ");
 
+/* the inner width of an element, padding excluded — the canvas is sized in CSS
+   pixels and would otherwise overflow its box by exactly the padding */
+function boxWidth(el) {
+  const cs = getComputedStyle(el);
+  return Math.floor(el.clientWidth - parseFloat(cs.paddingLeft || 0) - parseFloat(cs.paddingRight || 0));
+}
+
 /* ---------- decoding and sampling ---------- */
 async function decode(file) {
   if (window.createImageBitmap) {
@@ -129,8 +136,7 @@ function readOpts() {
 function paint(px, recs, opt) {
   const cv = $("genpv"),
     g = cv.getContext("2d");
-  const box = cv.parentElement.getBoundingClientRect();
-  const wCss = Math.max(120, Math.floor(box.width));
+  const wCss = Math.max(120, boxWidth(cv.parentElement));
   const scale = Math.min(wCss / px.W, 260 / px.H, 24);
   const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
   const w = Math.max(1, Math.round(px.W * scale)),

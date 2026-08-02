@@ -7,6 +7,8 @@ import { pickAt } from "./pick.js";
 import { renderInfo, renderPick } from "./panel.js";
 import { saveView, readHash } from "./hash.js";
 import { initImageGen, isImageFile, openImage, openGen, genOpen } from "./imggen.js";
+import { initGeom, openGeom, geomOpen, openImage as openGeomImage, openShapeJson, isShapeJson } from "./geomgen.js";
+import { initAbout, openAbout, aboutOpen } from "./about.js";
 import { initMenu, refreshMenu } from "./menu.js";
 import { saveLevel, savePng } from "./save.js";
 
@@ -35,10 +37,12 @@ export function load(text, name, refit) {
   refreshMenu();
 }
 
-/* An image opens the generator, anything else is read as a level. */
+/* An image opens whichever generator is in front, a .json goes to the
+   geometrizer, anything else is read as a level. */
 function take(f) {
   if (!f) return;
-  if (isImageFile(f)) openImage(f);
+  if (isShapeJson(f)) openShapeJson(f); // Geometrize shape data
+  else if (isImageFile(f)) geomOpen() ? openGeomImage(f) : openImage(f);
   else f.text().then((t) => load(t, f.name));
 }
 
@@ -67,8 +71,10 @@ for (const host of [$("groups"), $("objs")])
 initMenu({
   open: () => $("file").click(),
   image: openGen,
+  geom: openGeom,
   save: saveLevel,
   png: savePng,
+  about: openAbout,
 });
 
 $("zin").addEventListener("click", () => setZ(state.z * 1.4));
@@ -134,36 +140,55 @@ cv.addEventListener("pointerleave", () => {
   $("my").textContent = "—";
 });
 
+const toggleGrid = () => document.querySelector('[data-t="grid"]').click();
+
 addEventListener("keydown", (e) => {
-  if (genOpen()) return;
-  if (e.target && e.target.matches && e.target.matches("input, select, textarea")) return;
-  const k = e.key.toLowerCase();
-  if (e.ctrlKey || e.metaKey) {
-    // Ctrl+P would open the print dialog and Ctrl+S the browser's own save,
-    // so every branch here takes the key for itself
-    if (k === "s") {
-      e.shiftKey ? savePng() : saveLevel();
-      e.preventDefault();
-    } else if (k === "o") {
-      $("file").click();
-      e.preventDefault();
-    } else if (k === "p") {
-      openGen();
-      e.preventDefault();
-    }
+  const open = genOpen() || geomOpen() || aboutOpen();
+  if (e.key === "F1") {
+    // Chrome opens its help page on F1; taking the key back may not be allowed
+    // everywhere, in which case this simply does nothing extra
+    if (!open) openAbout();
+    e.preventDefault();
     return;
   }
+  if (open) return;
+  if (e.target && e.target.matches && e.target.matches("input, select, textarea")) return;
+  const k = e.key.toLowerCase();
+
+  if (e.ctrlKey || e.metaKey) {
+    // each of these is a key the browser wants for itself — save, open, print,
+    // find, find-next, page zoom — so the branch takes it back. Ctrl+F and
+    // Ctrl+G are not reliably ours, which is why fit and grid also answer to
+    // the bare letters below.
+    if (k === "s") {
+      e.shiftKey ? savePng() : saveLevel();
+    } else if (k === "o") {
+      $("file").click();
+    } else if (k === "p") {
+      openGen();
+    } else if (k === "g") {
+      e.shiftKey ? openGeom() : toggleGrid();
+    } else if (k === "f") {
+      fit();
+    } else if (k === "=" || k === "+") {
+      setZ(state.z * 1.4);
+    } else if (k === "-" || k === "_") {
+      setZ(state.z / 1.4);
+    } else return;
+    e.preventDefault();
+    return;
+  }
+
   if (k === "f") {
     fit();
   } else if (k === "g") {
-    document.querySelector('[data-t="grid"]').click();
-  } else if (k === "+" || k === "=") {
-    setZ(state.z * 1.4);
-  } else if (k === "-") {
-    setZ(state.z / 1.4);
+    toggleGrid();
   } else return;
   e.preventDefault();
 });
+
+/* no browser context menu anywhere on the page */
+addEventListener("contextmenu", (e) => e.preventDefault());
 
 let dc = 0;
 addEventListener("dragenter", (e) => {
@@ -187,4 +212,6 @@ addEventListener("drop", (e) => {
 
 loadSprites(draw);
 initImageGen(load);
+initAbout();
+initGeom(load);
 initView();
