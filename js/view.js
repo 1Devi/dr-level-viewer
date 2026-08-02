@@ -85,6 +85,27 @@ export function draw() {
     ctx.setLineDash([]);
   }
 
+  // the text caret and its selection: interface, not level geometry
+  if (state.caret) {
+    const c = state.caret;
+    for (const sl of c.sel || []) {
+      const a = toScr(sl.x1, sl.y - sl.asc),
+        b = toScr(sl.x2, sl.y + sl.desc);
+      ctx.fillStyle = "rgba(2,132,199,.25)";
+      ctx.fillRect(a[0], a[1], Math.max(b[0] - a[0], 1), Math.max(b[1] - a[1], 1));
+    }
+    const p1 = toScr(c.x, c.y - c.asc),
+      p2 = toScr(c.x, c.y + c.desc);
+    ctx.strokeStyle = "#0284c7";
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = "butt";
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(p1[0], p1[1]);
+    ctx.lineTo(p2[0], p2[1]);
+    ctx.stroke();
+  }
+
   if (show.finish) finishBox(lv.finish);
   if (show.start) startMark(lv.start);
 }

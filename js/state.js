@@ -8,8 +8,11 @@ export const state = {
   hover: null, // a line object, or {def, o, i, second?} for objects
   show: { solid: 1, decor: 1, grid: 1, finish: 1, start: 1, obj: 1, bg: 1, wire: 0 },
   tool: "move", // the editor tool in hand, see js/editor.js
-  brush: null, // colour, width and snapping the tools draw with
-  ghost: null, // the line being drawn right now, not yet committed
+  ed: null, // what the tools draw with: colour, width, font, …
+  sel: null, // what the choose tool has hold of
+  ghost: null, // what is being drawn right now, not yet committed
+  eraseAt: null, // {x, y, r} while the eraser is down
+  caret: null, // the text caret and its selection, in level units
   W: 0,
   H: 0,
   dpr: 1, // canvas size in CSS px and the device ratio

@@ -106,6 +106,34 @@
                 step="5" value="0"></label>
             <label class="ef" id="row_wayt"><span>sign variant</span><input type="number" id="e_wayt" min="0" max="2"
                 step="1" value="0"></label>
+            <div class="ef col" id="row_font">
+              <span>font</span>
+              <span class="fontname" id="fontname">default · system-ui</span>
+              <div class="gzrow">
+                <label class="btn wide">Choose font…<input type="file" id="e_font" hidden
+                    accept=".ttf,.otf,.woff,.woff2,font/*"></label>
+                <button class="btn" id="fontreset" title="back to the system font">Default</button>
+              </div>
+            </div>
+            <label class="ef" id="row_size"><span>font size</span><input type="number" id="e_size" min="1" max="600"
+                step="1" value="60"></label>
+            <label class="ef" id="row_textwidth"><span>line width</span><input type="number" id="e_textwidth" min="0"
+                max="200" step="1" value="2" title="0 takes it from the font size"></label>
+            <label class="ef" id="row_step"><span>outline step</span><input type="number" id="e_step" min="0.1" max="1"
+                step="0.05" value="0.5"
+                title="how far each inner outline sits from the last, as a share of its width"></label>
+            <label class="ef" id="row_spacing"><span>letter spacing</span><input type="number" id="e_spacing" min="-200"
+                max="200" step="1" value="0"></label>
+            <label class="ef" id="row_textmode"><span>letters</span>
+              <select id="e_textmode">
+                <option value="outline">outline</option>
+                <option value="filled">filled</option>
+              </select>
+            </label>
+            <p class="ehint" id="hint_text">Click to put the caret down, then type.
+              Arrows move it, shift+arrows and dragging select, Ctrl+A/C/X/V work.
+              Shift+Enter breaks the line, Enter turns the text into lines, Esc drops it.</p>
+
             <label class="ef chk" id="row_alt"><input type="checkbox" id="e_alt"><span>second look (_editor
                 pair)</span></label>
 
@@ -345,7 +373,8 @@
           <p>It edits them too. The strip on the left holds the game's own tools —
             lines and a curve brush over either layer, an eraser with a radius, a
             pipette, the eleven object types, start and finish — plus a magnet that
-            begins each stroke where the last one ended. <b>Choose</b> picks a line
+            begins each stroke where the last one ended. <b>Text</b> writes with any
+            font you hand it and turns the letters into lines. <b>Choose</b> picks a line
             or an object to change: colour, width, rounding, rotation, and shift
             gathers several lines to edit at once. Vehicle, game mode and background
             are set in the panel, every step is undoable, and <b>New level</b>

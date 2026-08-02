@@ -5,6 +5,7 @@ import { OBJ, byId } from "./format.js";
 import { SPR } from "./sprites.js";
 import { writeLevel } from "./write.js";
 import { ICON } from "./icons.js";
+import { textToLines, metrics, hitText, textBox, loadFontFile, DEFAULT_FAMILY } from "./text.js";
 import { toast } from "./toast.js";
 
 /* =====================================================================
@@ -31,6 +32,7 @@ export const TOOLS = [
   { id: "pipette", icon: "pipette", label: "pipette" },
   { id: "object", icon: "object", label: "object" },
   { id: "choose", icon: "choose", label: "choose" },
+  { id: "text", icon: "text", label: "text" },
   { id: "start", icon: "start", label: "start" },
   { id: "finish", icon: "finish", label: "finish" },
 ];
@@ -63,6 +65,7 @@ let redraw = null,
 let drag = null,
   bend = null,
   placing = null;
+let typing = null; // {x, y, rows} while a caret is on the level
 let lastEnd = null; // where the last stroke finished, for the magnet
 const undoLog = [],
   redoLog = [];
@@ -530,6 +533,44 @@ export function onPointer(kind, mx, my, shiftKey) {
     return true;
   }
 
+  if (t.id === "text") {
+    if (kind === "down") {
+      if (typing) {
+        // a click inside the text moves the caret; anywhere else puts the text
+        // down and starts a fresh one
+        const o = textOpt();
+        const box = textBox(typing.rows, o);
+        const pad = state.ed.size * 0.3;
+        if (mx >= box.x1 - pad && mx <= box.x2 + pad && my >= box.y1 - pad && my <= box.y2 + pad) {
+          const h = hitText(typing.rows, o, mx, my);
+          typing.r = h.r;
+          typing.c = h.c;
+          typing.sel = null;
+          drag = { from: { r: h.r, c: h.c } };
+          showText();
+          return true;
+        }
+        if (typing.rows.some((r) => r.length)) commitText();
+      }
+      typing = { x: round1(mx), y: round1(my), rows: [""], r: 0, c: 0, sel: null };
+      drag = null;
+      showText();
+      return true;
+    }
+    if (kind === "move" && drag && drag.from && typing) {
+      const h = hitText(typing.rows, textOpt(), mx, my);
+      if (h.r !== drag.from.r || h.c !== drag.from.c) {
+        typing.sel = { r: drag.from.r, c: drag.from.c };
+        typing.r = h.r;
+        typing.c = h.c;
+        showText();
+      }
+      return true;
+    }
+    if (kind === "up") drag = null;
+    return true;
+  }
+
   if (kind !== "down") return true;
 
   if (t.id === "pipette") {
@@ -573,8 +614,294 @@ function curveLines(a, b, off) {
   return out;
 }
 
+/* ---------------------------------------------------------------------
+   typing
+
+   A small text buffer with the things a caret is expected to do: move, select,
+   replace, copy and paste. `typing` holds the rows, where the caret is (row and
+   column) and where the selection started, if any.
+   --------------------------------------------------------------------- */
+let clip = ""; // what Ctrl+C put aside, in case the real
+// clipboard is not available to the page
+
+const textOpt = () => {
+  const e = state.ed;
+  // size, spacing, colour and layer — the thickness of the strokes is worked
+  // out from the size inside js/text.js, there is nothing to set here
+  return {
+    mode: e.textMode,
+    size: e.size,
+    spacing: e.spacing,
+    width: e.textWidth,
+    step: e.textStep,
+    solid: !e.scenery,
+    colour: inkOf(e).slice(),
+    family: e.font.family || DEFAULT_FAMILY,
+    ox: typing ? typing.x : 0,
+    oy: typing ? typing.y : 0,
+  };
+};
+
+/* caret and selection ordered as they read: [from, to] */
+function span() {
+  const t = typing;
+  if (!t.sel) return null;
+  const a = t.sel,
+    b = { r: t.r, c: t.c };
+  const back = a.r > b.r || (a.r === b.r && a.c > b.c);
+  return back ? [b, a] : [a, b];
+}
+
+function selectedText() {
+  const sp = span();
+  if (!sp) return "";
+  const [a, b] = sp;
+  if (a.r === b.r) return typing.rows[a.r].slice(a.c, b.c);
+  const parts = [typing.rows[a.r].slice(a.c)];
+  for (let r = a.r + 1; r < b.r; r++) parts.push(typing.rows[r]);
+  parts.push(typing.rows[b.r].slice(0, b.c));
+  return parts.join("\n");
+}
+
+function dropSelection() {
+  const sp = span();
+  if (!sp) return false;
+  const [a, b] = sp;
+  const rows = typing.rows;
+  rows.splice(a.r, b.r - a.r + 1, rows[a.r].slice(0, a.c) + rows[b.r].slice(b.c));
+  typing.r = a.r;
+  typing.c = a.c;
+  typing.sel = null;
+  return true;
+}
+
+function insert(str) {
+  dropSelection();
+  const parts = String(str).replace(/\r/g, "").split("\n");
+  const row = typing.rows[typing.r];
+  const head = row.slice(0, typing.c),
+    tail = row.slice(typing.c);
+  if (parts.length === 1) {
+    typing.rows[typing.r] = head + parts[0] + tail;
+    typing.c += parts[0].length;
+  } else {
+    const last = parts[parts.length - 1];
+    typing.rows.splice(typing.r, 1, head + parts[0], ...parts.slice(1, -1), last + tail);
+    typing.r += parts.length - 1;
+    typing.c = last.length;
+  }
+}
+
+/* moving the caret; `keep` extends the selection instead of dropping it */
+function moveCaret(dr, dc, keep, toEdge) {
+  const t = typing;
+  if (keep && !t.sel) t.sel = { r: t.r, c: t.c };
+  if (!keep) t.sel = null;
+  if (toEdge) {
+    t.c = dc < 0 ? 0 : t.rows[t.r].length;
+    return;
+  }
+  if (dc) {
+    t.c += dc;
+    if (t.c < 0) {
+      if (t.r > 0) {
+        t.r--;
+        t.c = t.rows[t.r].length;
+      } else t.c = 0;
+    } else if (t.c > t.rows[t.r].length) {
+      if (t.r < t.rows.length - 1) {
+        t.r++;
+        t.c = 0;
+      } else t.c = t.rows[t.r].length;
+    }
+  }
+  if (dr) {
+    t.r = Math.max(0, Math.min(t.rows.length - 1, t.r + dr));
+    t.c = Math.min(t.c, t.rows[t.r].length);
+  }
+}
+
+/* what the level would gain if Enter were pressed now, plus the caret and
+   whatever is selected — those two are overlay, not future lines */
+function showText() {
+  if (!typing) {
+    state.ghost = null;
+    state.caret = null;
+    if (redraw) redraw();
+    return;
+  }
+  const o = textOpt();
+  let lines = [];
+  try {
+    lines = textToLines(typing.rows, o);
+  } catch (err) {
+    lines = [];
+  }
+  state.ghost = lines;
+
+  try {
+    const M = metrics(typing.rows, o);
+    const y = (r) => o.oy + r * M.lineH;
+    const sel = [];
+    const sp = span();
+    if (sp) {
+      const [a, b] = sp;
+      for (let r = a.r; r <= b.r; r++) {
+        const xs = M.cols[r];
+        const c0 = r === a.r ? a.c : 0;
+        const c1 = r === b.r ? b.c : xs.length - 1;
+        if (c1 <= c0 && !(a.r !== b.r && r !== b.r)) continue;
+        sel.push({ x1: o.ox + xs[c0], x2: o.ox + xs[Math.max(c0, c1)] + (c1 <= c0 ? M.lineH * 0.15 : 0), y: y(r), asc: M.asc, desc: M.desc });
+      }
+    }
+    state.caret = {
+      x: o.ox + M.cols[typing.r][Math.min(typing.c, M.cols[typing.r].length - 1)],
+      y: y(typing.r),
+      asc: M.asc,
+      desc: M.desc,
+      sel,
+    };
+  } catch (err) {
+    state.caret = null;
+  }
+
+  if (redraw) redraw();
+}
+
+function commitText() {
+  const o = textOpt();
+  let lines = [];
+  try {
+    lines = textToLines(typing.rows, o);
+  } catch (err) {
+    lines = [];
+  }
+  typing = null;
+  state.ghost = null;
+  state.caret = null;
+  if (!lines.length) {
+    if (redraw) redraw();
+    return;
+  }
+  for (const l of lines) {
+    l.i = 0;
+    l.src = srcOf(l);
+  }
+  commit({ t: "add", lines });
+  toast("text · " + lines.length + " lines");
+}
+
+/* the clipboard is asynchronous and may be refused; the internal copy keeps
+   Ctrl+C and Ctrl+V working inside the page regardless */
+function copySelection(cut) {
+  const str = selectedText();
+  if (!str) return;
+  clip = str;
+  try {
+    navigator.clipboard.writeText(str).catch(() => {});
+  } catch (err) {}
+  if (cut) {
+    dropSelection();
+    showText();
+  }
+}
+
+function pasteClipboard() {
+  const put = (str) => {
+    if (str) {
+      insert(str);
+      showText();
+    }
+  };
+  try {
+    navigator.clipboard.readText().then(put, () => put(clip));
+  } catch (err) {
+    put(clip);
+  }
+}
+
+/* -> true when the key belonged to the caret and the page should not see it */
+export function onKey(e) {
+  if (!typing) return false;
+  const t = typing;
+
+  if (e.ctrlKey || e.metaKey) {
+    const k = e.key.toLowerCase();
+    if (k === "a") {
+      t.sel = { r: 0, c: 0 };
+      t.r = t.rows.length - 1;
+      t.c = t.rows[t.r].length;
+    } else if (k === "c") copySelection(false);
+    else if (k === "x") copySelection(true);
+    else if (k === "v") pasteClipboard();
+    else return false; // Ctrl+Z and friends stay the app's
+    showText();
+    return true;
+  }
+
+  if (e.key === "Enter") {
+    if (e.shiftKey) {
+      dropSelection();
+      const row = t.rows[t.r];
+      t.rows.splice(t.r, 1, row.slice(0, t.c), row.slice(t.c));
+      t.r++;
+      t.c = 0;
+    } else {
+      commitText();
+      return true;
+    }
+  } else if (e.key === "Backspace") {
+    if (!dropSelection()) {
+      if (t.c > 0) {
+        t.rows[t.r] = t.rows[t.r].slice(0, t.c - 1) + t.rows[t.r].slice(t.c);
+        t.c--;
+      } else if (t.r > 0) {
+        const prev = t.rows[t.r - 1];
+        t.rows.splice(t.r - 1, 2, prev + t.rows[t.r]);
+        t.r--;
+        t.c = prev.length;
+      }
+    }
+  } else if (e.key === "Delete") {
+    if (!dropSelection()) {
+      const row = t.rows[t.r];
+      if (t.c < row.length) t.rows[t.r] = row.slice(0, t.c) + row.slice(t.c + 1);
+      else if (t.r < t.rows.length - 1) t.rows.splice(t.r, 2, row + t.rows[t.r + 1]);
+    }
+  } else if (e.key === "ArrowLeft") moveCaret(0, -1, e.shiftKey);
+  else if (e.key === "ArrowRight") moveCaret(0, 1, e.shiftKey);
+  else if (e.key === "ArrowUp") moveCaret(-1, 0, e.shiftKey);
+  else if (e.key === "ArrowDown") moveCaret(1, 0, e.shiftKey);
+  else if (e.key === "Home") moveCaret(0, -1, e.shiftKey, true);
+  else if (e.key === "End") moveCaret(0, 1, e.shiftKey, true);
+  else if (e.key === "Escape") {
+    typing = null;
+    state.ghost = null;
+    state.caret = null;
+    if (redraw) redraw();
+    return true;
+  } else if (e.key.length === 1) {
+    insert(e.key);
+  } else return false;
+
+  showText();
+  return true;
+}
+
+export const isTyping = () => !!typing;
+
+/* a read-only look at the caret, for anything outside that needs to know */
+export const textState = () => typing && { rows: typing.rows.slice(), r: typing.r, c: typing.c, sel: typing.sel };
+
 /* Esc drops whatever is half-done */
 export function cancelGesture() {
+  if (typing) {
+    typing = null;
+    state.ghost = null;
+    state.caret = null;
+    if (redraw) redraw();
+    return true;
+  }
   if (!drag && !bend && !placing && !state.eraseAt && !state.sel) return false;
   if (placing) {
     delete placing.o.half;
@@ -630,13 +957,23 @@ function fields() {
     o = selObj();
   const l = ls && ls.length ? ls[0] : null;
   const drawing = t === "line" || t === "brush";
+  const text = t === "text";
   const show = (id, on) => {
     $(id).hidden = !on;
   };
-  show("row_scenery", drawing);
-  show("row_colour", drawing || !!l);
+  show("row_scenery", drawing || text);
+  show("row_colour", drawing || text || !!l);
+  // text sets neither: the stroke width comes from the font size, and letters
+  // are not drawn with rounded ends
   show("row_width", drawing || !!l);
   show("row_round", drawing || !!l);
+  show("row_font", text);
+  show("row_size", text);
+  show("row_spacing", text);
+  show("row_textmode", text);
+  show("row_textwidth", text);
+  show("row_step", text && state.ed.textMode !== "outline");
+  show("hint_text", text);
   show("row_erase", t === "eraser");
   show("objects", t === "object");
   show("row_rot", (t === "object" && rotates(state.ed.obj)) || !!l || (o && turns(o)));
@@ -648,6 +985,9 @@ function fields() {
 }
 
 export function setTool(id) {
+  // changing tool must not throw away what has been typed: it is put down as
+  // lines, the same as clicking away from the caret does
+  if (typing && typing.rows.some((r) => r.length)) commitText();
   state.tool = id;
   cancelGesture();
   for (const b of document.querySelectorAll("[data-tool]")) b.classList.toggle("on", b.dataset.tool === id);
@@ -674,6 +1014,13 @@ export function refreshEditor() {
   $("magnettool").classList.toggle("on", !!e.magnet);
   $("gridtool").classList.toggle("on", !!state.show.grid);
   $("e_alt").checked = o && o.id === "portal" ? altPortal(o.o) : !!e.alt;
+  $("e_size").value = e.size;
+  $("e_spacing").value = e.spacing;
+  $("e_textmode").value = e.textMode;
+  // an empty width means "from the size", and the field shows what that is
+  $("e_textwidth").value = e.textWidth || Math.max(1, Math.round(e.size / (e.textMode === "outline" ? 28 : 24)));
+  $("e_step").value = e.textStep;
+  $("fontname").textContent = e.font.name;
   $("toolsel").textContent = ls ? (ls.length > 1 ? ls.length + " lines selected" : "line " + nm(l.x1) + "," + nm(l.y1) + " → " + nm(l.x2) + "," + nm(l.y2)) : o ? byId[o.id].label + (o.second ? " (exit)" : "") : "";
 
   for (const el of document.querySelectorAll("[data-obj]")) el.classList.toggle("on", el.dataset.obj === e.obj);
@@ -721,6 +1068,7 @@ export function initEditor(drawFn, infoFn) {
   state.ghost = null;
   state.eraseAt = null;
   state.sel = null;
+  state.caret = null;
   state.ed = {
     // the two layers keep their own colour: black for lines, the editor's grey
     // for scenery, and each is remembered while the other is being used
@@ -735,6 +1083,12 @@ export function initEditor(drawFn, infoFn) {
     rot: 0,
     wayT: 0,
     alt: false,
+    font: { family: null, name: "default · system-ui" },
+    size: 60,
+    spacing: 0,
+    textMode: "outline",
+    textWidth: 0, // 0 = worked out from the size
+    textStep: 0.5, // how far each inner outline sits from the last
   };
 
   $("tools").innerHTML =
@@ -898,6 +1252,51 @@ export function initEditor(drawFn, infoFn) {
   $("e_scenery").addEventListener("input", () => {
     state.ed.scenery = $("e_scenery").checked;
     refreshEditor(); // each layer brings its own colour along
+    showText();
+  });
+
+  $("e_font").addEventListener("change", async (ev) => {
+    const f = ev.target.files[0];
+    ev.target.value = "";
+    if (!f) return;
+    try {
+      state.ed.font = await loadFontFile(f);
+      toast("font: " + state.ed.font.name);
+    } catch (err) {
+      toast("could not use that font file: " + err.message, true);
+    }
+    refreshEditor();
+    showText();
+  });
+  $("fontreset").addEventListener("click", () => {
+    state.ed.font = { family: null, name: "default · system-ui" };
+    refreshEditor();
+    showText();
+  });
+  $("e_step").addEventListener("input", () => {
+    const v = parseFloat($("e_step").value);
+    if (Number.isFinite(v)) state.ed.textStep = Math.max(0.1, Math.min(1, v));
+    showText();
+  });
+  $("e_textwidth").addEventListener("input", () => {
+    const v = Math.round(parseFloat($("e_textwidth").value));
+    state.ed.textWidth = Number.isFinite(v) && v > 0 ? Math.min(200, v) : 0;
+    if (!state.ed.textWidth) refreshEditor(); // empty means "from the size"
+    showText();
+  });
+  for (const [id, key, lo, hi] of [
+    ["e_size", "size", 1, 600],
+    ["e_spacing", "spacing", -200, 200],
+  ])
+    $(id).addEventListener("input", () => {
+      const v = parseFloat($(id).value);
+      if (Number.isFinite(v)) state.ed[key] = Math.max(lo, Math.min(hi, v));
+      showText();
+    });
+  $("e_textmode").addEventListener("change", () => {
+    state.ed.textMode = $("e_textmode").value;
+    refreshEditor();
+    showText();
   });
 
   $("magnettool").addEventListener("click", () => {
@@ -928,7 +1327,9 @@ export function resetHistory() {
   bend = null;
   placing = null;
   lastEnd = null;
+  typing = null;
   state.ghost = null;
   state.eraseAt = null;
   state.sel = null;
+  state.caret = null;
 }

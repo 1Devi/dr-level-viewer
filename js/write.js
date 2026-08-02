@@ -24,7 +24,12 @@ const f2 = (v) => (Number.isFinite(v) ? v : 0).toFixed(2);
 const f3 = (v) => (Number.isFinite(v) ? v : 0).toFixed(3);
 const int = (v) => String(Math.round(Number.isFinite(v) ? v : 0));
 /* zoom is the only field that is sometimes 1 and sometimes 1.21 */
-const fz = (v) => (Number.isInteger(v) ? String(v) : String(+(+v).toFixed(4)));
+/* roundedF is not a whole number: the game writes 7.5 for a line of width 15 */
+const fc = (v) => String(+(+v).toFixed(2));
+
+/* zoom comes in at full precision — 1.0919997692108 in a level the game wrote —
+   and goes back out the same */
+const fz = (v) => String(+v);
 
 const isBad = (x) => f1(x) === "1.0";
 
@@ -82,7 +87,7 @@ export function writeLevel(lv) {
 
   for (const l of solid.concat(decor)) {
     let row = f1(l.x1) + " " + f2(l.c[0]) + " " + f2(l.c[1]) + " " + f2(l.c[2]) + " " + Math.max(1, Math.round(l.th || 5));
-    if (l.cap > 0) row += " " + Math.round(l.cap); // roundedF, written only when set
+    if (l.cap > 0) row += " " + fc(l.cap); // roundedF, written only when set
     L.push(row, f1(l.y1), f1(l.x2), f1(l.y2));
   }
 

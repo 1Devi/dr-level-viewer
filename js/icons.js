@@ -42,6 +42,9 @@ export const ICON = {
   /* a horseshoe magnet, poles down: the next line starts where the last ended */
   magnet: svg('<path d="M5 20v-8a7 7 0 0 1 14 0v8"/><path d="M9.5 20v-8a2.5 2.5 0 0 1 5 0v8"/>' + '<path d="M5 16h4.5M14.5 16H19"/>' + '<path d="M5 16h4.5v4H5zM14.5 16H19v4h-4.5z" fill="currentColor" ' + 'fill-opacity=".2" stroke="none"/>'),
 
+  /* a letter and the caret next to it */
+  text: svg('<path d="M4 5.5V4h11v1.5M9.5 4v15M7 19h5"/><path d="M19 8v9M17.5 8h3M17.5 17h3"/>'),
+
   /* pointer: pick something and change it */
   choose: svg('<path d="M6 3.2v14.3l3.7-3.5 2.2 5 2.7-1.2-2.3-4.9 5.2-.4z"/>'),
 

@@ -9,7 +9,7 @@ import { saveView, readHash } from "./hash.js";
 import { initImageGen, isImageFile, openImage, openGen, genOpen } from "./imggen.js";
 import { initGeom, openGeom, geomOpen, openImage as openGeomImage, openShapeJson, isShapeJson } from "./geomgen.js";
 import { initAbout, openAbout, aboutOpen } from "./about.js";
-import { initEditor, onPointer, cancelGesture, undo, redo, refreshEditor, resetHistory, newLevelText } from "./editor.js";
+import { initEditor, onPointer, onKey, cancelGesture, undo, redo, refreshEditor, resetHistory, newLevelText } from "./editor.js";
 import { initMenu, refreshMenu } from "./menu.js";
 import { saveLevel, savePng } from "./save.js";
 import { toast } from "./toast.js";
@@ -177,6 +177,11 @@ addEventListener("keydown", (e) => {
   }
   if (open) return;
   if (e.target && e.target.matches && e.target.matches("input, select, textarea")) return;
+  // a caret on the level swallows ordinary keys; Ctrl combinations still pass
+  if (onKey(e)) {
+    e.preventDefault();
+    return;
+  }
   const k = e.key.toLowerCase();
 
   if (e.ctrlKey || e.metaKey) {
