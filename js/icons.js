@@ -21,6 +21,9 @@ export const ICON = {
   /* the same, bent: the brush draws a curve */
   brush: svg('<path d="M5.5 17.5C8 8 16 6.5 18.5 6.5"/><circle cx="4.5" cy="18.5" r="2"/>' + '<circle cx="19.5" cy="5.5" r="2"/>'),
 
+  /* a pencil, drawing its own trail */
+  pencil: svg('<path d="m16.5 3.6 3.9 3.9-9.7 9.7-5.2 1.3 1.3-5.2z"/><path d="m14.4 5.7 3.9 3.9"/>' + '<path d="M3 21c2.5 0 3-1.6 5-1.6s2.5 1.6 5 1.6 3-1.6 5-1.6"/>'),
+
   /* eraser, tilted, with the line it is taking off */
   eraser: svg('<path d="M8.5 19.5 4 15a1.6 1.6 0 0 1 0-2.3l8-8a1.6 1.6 0 0 1 2.3 0l4.6 4.6' + 'a1.6 1.6 0 0 1 0 2.3l-7.6 7.6H8.5z"/><path d="M9 9.5 15.5 16"/><path d="M3 21h18"/>'),
 

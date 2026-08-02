@@ -13,8 +13,8 @@ import { toast } from "./toast.js";
 
    Tools, named after the game's own (the strings live in resource.car):
 
-     move and zoom · lines · brush · eraser · pipette · object · choose
-     start · finish
+     move and zoom · lines · brush · pencil · eraser · pipette · object
+     choose · start · finish
 
    Lines and scenery lines are one tool with a `scenery` switch, and so are
    brush and scenery brush — the geometry is identical, only the layer differs.
@@ -28,6 +28,7 @@ export const TOOLS = [
   { id: "move", icon: "move", label: "move and zoom" },
   { id: "line", icon: "line", label: "lines", draw: 1 },
   { id: "brush", icon: "brush", label: "brush", draw: 1, curve: 1 },
+  { id: "pencil", icon: "pencil", label: "pencil", free: 1 },
   { id: "eraser", icon: "eraser", label: "eraser" },
   { id: "pipette", icon: "pipette", label: "pipette" },
   { id: "object", icon: "object", label: "object" },
@@ -116,6 +117,12 @@ function mkLine(x1, y1, x2, y2) {
   return l;
 }
 
+/* The file keeps coordinates to a tenth, so anything shorter than that has no
+   length once written. With butt ends such a record draws nothing at all and is
+   pure litter; with round ends it is a dot, which is a thing people draw on
+   purpose — the game's own levels hold 42 of them. */
+const drawable = (l) => l.cap !== null || Math.hypot(l.x2 - l.x1, l.y2 - l.y1) >= 0.05;
+
 /* solid lines come first in the file, and so they do in the model */
 function reindex() {
   const lv = state.lv;
@@ -145,6 +152,13 @@ function put(kind, target, s) {
 }
 
 function commit(cmd) {
+  if (cmd.t === "add") {
+    cmd.lines = cmd.lines.filter(drawable);
+    if (!cmd.lines.length) {
+      after();
+      return;
+    }
+  }
   // a field held down or an object dragged across the screen is one change, not
   // fifty: fold it into the entry on top when it is the same field of the same
   // thing, moments apart. Different fields stay separate, so undo walks back
@@ -384,6 +398,45 @@ export function onPointer(kind, mx, my, shiftKey) {
     }
     lastEnd = b;
     commit({ t: "add", lines: [mkLine(a[0], a[1], b[0], b[1])] });
+    return true;
+  }
+
+  /* ---- pencil: free-hand, a segment laid every `seg` units ---- */
+  if (t.free) {
+    if (kind === "down") {
+      drag = { pts: [[snap(mx), snap(my)]], lines: [] };
+      state.ghost = [];
+      return true;
+    }
+    if (!drag) return true;
+    if (kind === "move") {
+      const last = drag.pts[drag.pts.length - 1];
+      const step = Math.max(0.1, e.seg);
+      // with the grid on every point lands on a node, staircase and all
+      if (Math.hypot(mx - last[0], my - last[1]) < step) return true;
+      const p = [snap(mx), snap(my)];
+      if (p[0] === last[0] && p[1] === last[1]) return true;
+      drag.pts.push(p);
+      drag.lines.push(mkLine(last[0], last[1], p[0], p[1]));
+      state.ghost = drag.lines.slice();
+      if (redraw) redraw();
+      return true;
+    }
+    /* the tail is shorter than a segment, but dropping it would mean a quick
+       flick draws nothing at all */
+    const last = drag.pts[drag.pts.length - 1];
+    const end = [snap(mx), snap(my)];
+    if (end[0] !== last[0] || end[1] !== last[1]) drag.lines.push(mkLine(last[0], last[1], end[0], end[1]));
+
+    const lines = drag.lines;
+    lastEnd = end;
+    drag = null;
+    state.ghost = null;
+    if (!lines.length) {
+      if (redraw) redraw();
+      return true;
+    }
+    commit({ t: "add", lines });
     return true;
   }
 
@@ -966,7 +1019,7 @@ function fields() {
     ls = selLines(),
     o = selObj();
   const l = ls && ls.length ? ls[0] : null;
-  const drawing = t === "line" || t === "brush";
+  const drawing = t === "line" || t === "brush" || t === "pencil";
   const text = t === "text";
   const show = (id, on) => {
     $(id).hidden = !on;
@@ -984,6 +1037,7 @@ function fields() {
   show("row_textwidth", text);
   show("row_step", text && state.ed.textMode !== "outline");
   show("hint_text", text);
+  show("row_seg", t === "pencil");
   show("row_erase", t === "eraser");
   show("objects", t === "object");
   show("row_rot", (t === "object" && rotates(state.ed.obj)) || !!l || (o && turns(o)));
@@ -1018,6 +1072,7 @@ export function refreshEditor() {
   $("e_round").checked = l ? l.cap !== null : !!e.round;
   $("e_scenery").checked = !!e.scenery;
   $("e_erase").value = e.eraseR;
+  $("e_seg").value = e.seg;
   $("e_wayt").value = o ? o.o.t || 0 : e.wayT;
   $("e_rot").value = l ? deg((Math.atan2(l.y2 - l.y1, l.x2 - l.x1) * 180) / Math.PI) : o ? deg((o.second ? o.o.a2 : o.o.a) || 0) : e.rot;
 
@@ -1093,6 +1148,7 @@ export function initEditor(drawFn, infoFn) {
     rot: 0,
     wayT: 0,
     alt: false,
+    seg: 10, // the pencil lays a segment every this many units
     font: { family: null, name: "default · system-ui" },
     size: 60,
     spacing: 0,
@@ -1254,6 +1310,10 @@ export function initEditor(drawFn, infoFn) {
         state.ed.alt = on;
       },
     );
+  });
+  $("e_seg").addEventListener("input", () => {
+    const v = parseFloat($("e_seg").value);
+    if (Number.isFinite(v)) state.ed.seg = Math.max(0.1, v);
   });
   $("e_erase").addEventListener("input", () => {
     const v = num("e_erase", 1, 200);

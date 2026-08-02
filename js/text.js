@@ -361,6 +361,8 @@ function insetStrokes(mask, t, eps, stepFrac) {
   return out;
 }
 
+const drawable = (l) => l.cap !== null || Math.abs(l.x2 - l.x1) >= 0.05 || Math.abs(l.y2 - l.y1) >= 0.05;
+
 export function maskToLines(mask, opt) {
   const k = opt.size / (mask.res || RES);
   const ox = opt.ox - mask.ox * k,
@@ -383,7 +385,7 @@ export function maskToLines(mask, opt) {
   if (opt.mode !== "outline") for (const s of insetStrokes(mask, fill / k, eps, opt.step)) out.push(put(s.a[0], s.a[1], s.b[0], s.b[1], s.th * k, true, true));
 
   for (const s of edgeStrokes(mask, (opt.mode === "outline" ? edge : Math.max(1, Math.round(opt.size / EDGE_DIV))) / k, eps, k)) out.push(put(s.a[0], s.a[1], s.b[0], s.b[1], s.th * k, true));
-  return out;
+  return out.filter(drawable);
 }
 
 export function textToLines(rows, opt) {
