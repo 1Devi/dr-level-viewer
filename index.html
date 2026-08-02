@@ -25,6 +25,8 @@
         <div class="menu">
           <button class="mtitle" type="button" aria-haspopup="true" aria-expanded="false">Menu</button>
           <div class="mpop" role="menu">
+            <button class="mitem" type="button" role="menuitem" data-a="new" title="Start an empty level">
+              New level<span class="mk">N</span></button>
             <button class="mitem" type="button" role="menuitem" data-a="open"
               title="Levels live in %AppData%\17Studio\Draw Rider\Documents\userlevels">
               Open file<span class="mk">Ctrl+O</span></button>
@@ -35,8 +37,7 @@
               title="Recreate a JPG/PNG out of shapes, or load a Geometrize JSON">
               Geometrize image<span class="mk">Ctrl+Shift+G</span></button>
             <hr>
-            <button class="mitem" type="button" role="menuitem" data-a="save" data-need="level"
-              title="Write the level back out: d10.0 footer, guarded against the x = 1.0 save bug">
+            <button class="mitem" type="button" role="menuitem" data-a="save" data-need="level">
               Save level<span class="mk">Ctrl+S</span></button>
             <button class="mitem" type="button" role="menuitem" data-a="png" data-need="level">
               Save PNG<span class="mk">Ctrl+Shift+S</span></button>
@@ -48,7 +49,8 @@
       </nav>
       <input type="file" id="file" hidden>
 
-      <span class="fname empty" id="fname">no file loaded</span>
+      <input class="fname" id="fname" value="" placeholder="no file loaded" spellcheck="false"
+        title="the name the level is saved under">
 
       <div class="spacer"></div>
 
@@ -70,6 +72,7 @@
             i.e. C:\Users\&lt;you&gt;\AppData\Roaming\17Studio\…
           </span>
         </div>
+        <div class="tools" id="tools"></div>
         <div class="drop" id="drop">release to open</div>
       </div>
 
@@ -80,6 +83,52 @@
             <dd class="muted" style="grid-column:1/-1;text-align:left">—</dd>
           </dl>
           <div id="parsewarn"></div>
+        </section>
+
+        <section>
+          <h2>Tool</h2>
+          <div class="editrow">
+            <span class="toolname" id="toolname">tool: move and zoom</span>
+            <span class="toolsel" id="toolsel"></span>
+
+            <label class="ef chk" id="row_scenery"><input type="checkbox" id="e_scenery"><span>scenery</span></label>
+            <label class="ef" id="row_colour"><span>colour</span><input type="color" id="e_color"
+                value="#000000"></label>
+            <label class="ef" id="row_width"><span>width</span><input type="number" id="e_th" min="1" max="60" step="1"
+                value="5"></label>
+            <label class="ef chk" id="row_round"><input type="checkbox" id="e_round"><span>rounded</span></label>
+
+            <label class="ef" id="row_erase"><span>erase radius</span><input type="number" id="e_erase" min="1"
+                max="200" step="1" value="8"></label>
+
+            <div class="objects" id="objects"></div>
+            <label class="ef" id="row_rot"><span>rotation</span><input type="number" id="e_rot" min="-360" max="360"
+                step="5" value="0"></label>
+            <label class="ef" id="row_wayt"><span>sign variant</span><input type="number" id="e_wayt" min="0" max="2"
+                step="1" value="0"></label>
+            <label class="ef chk" id="row_alt"><input type="checkbox" id="e_alt"><span>second look (_editor
+                pair)</span></label>
+
+            <p class="ehint" id="hint_pipette">Click a line to take its colour, width, ends and layer.</p>
+            <p class="ehint" id="hint_move">Drag to pan, wheel to zoom.</p>
+            <p class="ehint" id="hint_choose">Click a line or an object to change it, drag to move it.
+              Shift-click adds more lines to the selection.</p>
+          </div>
+        </section>
+
+        <section>
+          <h2>Level</h2>
+          <div class="editrow" id="row_mode">
+            <label class="ef"><span>mode</span><select id="e_mode"></select></label>
+            <label class="ef" id="row_modearg"><span>bomb time</span><input type="number" id="e_modearg" min="0"
+                max="999" step="1" value="3"></label>
+            <label class="ef"><span>background</span><input type="color" id="e_bg" value="#ffffff"></label>
+          </div>
+        </section>
+
+        <section>
+          <h2>Vehicle</h2>
+          <div class="vehicles" id="vehicles"></div>
         </section>
 
         <section>
@@ -293,6 +342,15 @@
             one unit to one pixel. Nothing is uploaded anywhere: files are read in the
             browser and never leave the machine.</p>
 
+          <p>It edits them too. The strip on the left holds the game's own tools —
+            lines and a curve brush over either layer, an eraser with a radius, a
+            pipette, the eleven object types, start and finish — plus a magnet that
+            begins each stroke where the last one ended. <b>Choose</b> picks a line
+            or an object to change: colour, width, rounding, rotation, and shift
+            gathers several lines to edit at once. Vehicle, game mode and background
+            are set in the panel, every step is undoable, and <b>New level</b>
+            starts an empty one.</p>
+
           <p>It also builds levels. <b>Pixelate image</b> turns a picture into one
             record per pixel. <b>Geometrize image</b> recreates it out of shapes,
             fitting them one at a time, and reads or writes the same shape JSON the
@@ -303,6 +361,8 @@
 
           <h3>Shortcuts</h3>
           <dl class="kv keys">
+            <dt>N</dt>
+            <dd>new level</dd>
             <dt>Ctrl+O</dt>
             <dd>open a level file</dd>
             <dt>Ctrl+S</dt>
@@ -319,12 +379,15 @@
             <dd>toggle the grid</dd>
             <dt>Ctrl+ + / −</dt>
             <dd>zoom in and out</dd>
+            <dt>Ctrl+Z / Ctrl+Y</dt>
+            <dd>undo, redo</dd>
             <dt>F1</dt>
             <dd>this window</dd>
           </dl>
 
           <h3>Credits</h3>
-          <p>Sprites in <code>assets/sprites</code> are from Draw Rider by 17Studio.
+          <p>Sprites in <code>assets/sprites</code>, the editor icons and the vehicle
+            pictures are from Draw Rider by 17Studio.
             The shape fitting follows
             <a href="https://www.geometrize.co.uk/" target="_blank" rel="noreferrer">Geometrize</a>
             by Sam Twidale, itself based on

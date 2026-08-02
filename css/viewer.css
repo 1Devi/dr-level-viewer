@@ -331,13 +331,25 @@ label.btn {
 .fname {
   font: 12px/1 var(--mono);
   color: var(--ink-2);
-  max-width: 34ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  width: 24ch;
+  padding: 6px 8px;
+  background: var(--panel-2);
+  border: 1px solid transparent;
+  border-radius: var(--r);
 }
 
-.fname.empty {
+.fname:hover {
+  border-color: var(--edge-2)
+}
+
+.fname:focus {
+  outline: none;
+  border-color: var(--accent);
+  color: var(--ink);
+  background: var(--panel)
+}
+
+.fname::placeholder {
   color: var(--ink-3)
 }
 
@@ -448,6 +460,249 @@ main {
 .empty-note code {
   font: inherit;
   color: var(--ink-2)
+}
+
+/* ---------- editor ---------- */
+.tools {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border: 1px solid var(--edge);
+  box-shadow: 0 6px 18px #0000001f;
+}
+
+.tool {
+  width: 32px;
+  height: 32px;
+  padding: 3px;
+  cursor: pointer;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  display: grid;
+  place-items: center;
+}
+
+.tool svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+  color: var(--ink-2)
+}
+
+.tool.flip svg {
+  transform: scaleX(-1)
+}
+
+.tool:hover svg {
+  color: var(--ink)
+}
+
+.tool.on svg {
+  color: var(--accent)
+}
+
+.tool:hover {
+  background: var(--panel-2);
+  border-color: var(--edge)
+}
+
+.tool.on {
+  background: var(--accent-soft);
+  border-color: var(--accent)
+}
+
+.tool:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px
+}
+
+.tsep {
+  height: 1px;
+  background: var(--edge);
+  margin: 2px 1px
+}
+
+.editrow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px
+}
+
+.toolname {
+  font: 11px/1.4 var(--mono);
+  color: var(--accent);
+  letter-spacing: .02em;
+  margin-bottom: 2px;
+}
+
+.ef {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 11.5px/1.4 var(--ui);
+  color: var(--ink-2)
+}
+
+.ef>span {
+  flex: 1 1 auto
+}
+
+.ef input[type=number] {
+  width: 76px;
+  padding: 4px 6px;
+  font: 11.5px/1.3 var(--mono);
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--edge-2);
+  border-radius: var(--r);
+}
+
+.ef select {
+  width: auto;
+  max-width: 60%;
+  padding: 4px 6px;
+  font: 11px/1.3 var(--ui);
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--edge-2);
+  border-radius: var(--r);
+}
+
+.ef input[type=color] {
+  width: 28px;
+  height: 22px;
+  padding: 1px;
+  cursor: pointer;
+  background: var(--panel-2);
+  border: 1px solid var(--edge-2);
+  border-radius: var(--r);
+}
+
+.ef[hidden],
+.ehint[hidden],
+.objects[hidden] {
+  display: none
+}
+
+.toolsel {
+  font: 10.5px/1.4 var(--mono);
+  color: var(--ink-3)
+}
+
+.toolsel:empty {
+  display: none
+}
+
+.ehint {
+  margin: 0;
+  font: 11px/1.5 var(--ui);
+  color: var(--ink-3)
+}
+
+.objects {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  margin: 2px 0
+}
+
+.obj {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 2px;
+  cursor: pointer;
+  color: var(--ink-2);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  font: 9.5px/1.2 var(--mono);
+  text-align: center;
+}
+
+.obj img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain
+}
+
+.obj .dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid #0003;
+  margin: 3px 0
+}
+
+.obj:hover {
+  background: var(--panel-2);
+  border-color: var(--edge)
+}
+
+.obj.on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent)
+}
+
+.ef.chk {
+  gap: 6px
+}
+
+.ef.chk>span {
+  flex: 0 1 auto
+}
+
+.ef input[type=checkbox] {
+  accent-color: var(--accent);
+  margin: 0
+}
+
+.vehicles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px
+}
+
+.veh {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 3px;
+  cursor: pointer;
+  color: var(--ink-2);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  font: 10px/1.2 var(--mono);
+  text-align: center;
+}
+
+.veh img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain
+}
+
+.veh:hover {
+  background: var(--panel-2);
+  border-color: var(--edge)
+}
+
+.veh.on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent)
 }
 
 /* ---------- sidebar ---------- */

@@ -16,7 +16,7 @@ export function renderInfo() {
     q("vehicle (v)", esc(lv.veh || "—")) +
     q("mode / time (m)", esc((lv.gameMode || "—") + " / " + (lv.bombTime || "—"))) +
     q("background", '<span class="sw" style="background:' + rgb(lv.bg) + '"></span> ' + hex(lv.bg)) +
-    q("lines / Z lines", lv.nSolid + " / " + lv.nDecor) +
+    q("lines / scenery lines", lv.nSolid + " / " + lv.nDecor) +
     q("objects", lv.nObj) +
     q("finish", nm(lv.finish.x) + ", " + nm(lv.finish.y)) +
     q("start", nm(lv.start.x) + ", " + nm(lv.start.y)) +
@@ -105,6 +105,10 @@ export function renderPick() {
       rows.push("<dt>exit rotation</dt><dd>" + nm(o.a2) + "°</dd>");
     }
     if (o.t !== undefined) rows.push("<dt>variant (t_t)</dt><dd>" + nm(o.t) + " → way_" + (o.t === 1 ? 1 : o.t === 2 ? 2 : 0) + ".png</dd>");
+    if (def.id === "portal") {
+      const alt = !!(o.extra && o.extra[3] && o.extra[3][0]);
+      rows.push("<dt>second look</dt><dd>" + (alt ? "true → portal_editor" : "false → portal") + "</dd>");
+    }
     rows.push("<dt>size</dt><dd>" + def.size + "</dd>");
     el.innerHTML = '<dl class="kv">' + rows.join("") + "</dl>" + '<pre class="raw" style="margin-top:8px">' + o.raw.map(nm).join("\n") + "</pre>";
     return;
@@ -136,8 +140,8 @@ export function renderPick() {
     "<dt>width</dt><dd>" +
     l.th +
     "</dd>" +
-    "<dt>caps</dt><dd>" +
-    (l.cap !== null ? "round r=" + l.cap : "butt") +
+    "<dt>rounded</dt><dd>" +
+    (l.cap !== null ? "true" : "false") +
     "</dd>" +
     '<dt>color</dt><dd><span class="sw" style="background:' +
     rgb(l.c) +

@@ -6,9 +6,13 @@ import { toast } from "./toast.js";
 
 const nice = (n) => n.toLocaleString("en-US").replace(/,/g, " ");
 
+/* Level files carry no extension — that is how the game keeps them, and how it
+   expects to find them in userlevels. The blob has to be octet-stream for that
+   to survive: with text/plain the browser decides the name looks wrong and
+   silently appends .txt. */
 function levelName() {
-  const n = ($("fname").textContent || "level").trim();
-  return n && n !== "no file loaded" ? n : "level";
+  const n = ($("fname").value || "").trim().replace(/[\\/:*?"<>|]/g, "_");
+  return n || "level";
 }
 
 export function download(name, href) {

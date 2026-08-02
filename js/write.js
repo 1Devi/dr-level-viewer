@@ -26,16 +26,6 @@ const int = (v) => String(Math.round(Number.isFinite(v) ? v : 0));
 /* zoom is the only field that is sometimes 1 and sometimes 1.21 */
 const fz = (v) => (Number.isInteger(v) ? String(v) : String(+(+v).toFixed(4)));
 
-/* ---------------------------------------------------------------------
-   The save bug: a record whose StartX prints as
-   exactly "1.0" is dropped by the editor, and the save dies with it. In Lua
-   t[1.0] and t[1] are the same key, so it most likely collides with the first
-   array slot of some internal table.
-
-   guard.py shifts StartX alone; here the whole record moves by 0.1 instead,
-   so the length — and with it the shape of the line — stays exactly as it was.
-   0.1 against a mean segment length of 11 is invisible.
-   --------------------------------------------------------------------- */
 const isBad = (x) => f1(x) === "1.0";
 
 export function guardStartX(lines, shift = 0.1) {
@@ -98,15 +88,22 @@ export function writeLevel(lv) {
 
   const objects = lv.objects || {};
   const list = (id) => objects[id] || [];
+  /* an object row, plus anything extra the file kept on it (a narrowed portal
+     writes its value next to x2) */
+  const objRow = (d, o, v, k) => {
+    const row = objField(d, v, k);
+    const ex = o.extra && o.extra[k];
+    return ex && ex.length ? row + " " + ex.map((x) => String(+(+x).toFixed(3))).join(" ") : row;
+  };
   const put = (d) => {
     const items = list(d.id);
     L.push(String(items.length));
-    for (const o of items) for (const [k, v] of objNums(d, o).entries()) L.push(objField(d, v, k));
+    for (const o of items) for (const [k, v] of objNums(d, o).entries()) L.push(objRow(d, o, v, k));
   };
   const putKeyed = (d) => {
     const items = list(d.id);
     L.push(d.key + " " + items.length);
-    for (const o of items) for (const [k, v] of objNums(d, o).entries()) L.push(objField(d, v, k));
+    for (const o of items) for (const [k, v] of objNums(d, o).entries()) L.push(objRow(d, o, v, k));
   };
 
   const zx = typeof lv.zoom === "number" ? lv.zoom : lv.zoom && lv.zoom.x;

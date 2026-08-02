@@ -9,8 +9,10 @@ import { saveView, readHash } from "./hash.js";
 import { initImageGen, isImageFile, openImage, openGen, genOpen } from "./imggen.js";
 import { initGeom, openGeom, geomOpen, openImage as openGeomImage, openShapeJson, isShapeJson } from "./geomgen.js";
 import { initAbout, openAbout, aboutOpen } from "./about.js";
+import { initEditor, onPointer, cancelGesture, undo, redo, refreshEditor, resetHistory, newLevelText } from "./editor.js";
 import { initMenu, refreshMenu } from "./menu.js";
 import { saveLevel, savePng } from "./save.js";
+import { toast } from "./toast.js";
 
 /* ---------- loading ---------- */
 export function load(text, name, refit) {
@@ -24,8 +26,7 @@ export function load(text, name, refit) {
   state.lv = parsed;
   state.hidden = new Set();
   state.hover = null;
-  $("fname").textContent = name;
-  $("fname").classList.remove("empty");
+  $("fname").value = name;
   $("note").classList.add("hide");
   const h = refit ? null : readHash();
   if (h) {
@@ -35,6 +36,8 @@ export function load(text, name, refit) {
   renderInfo();
   renderPick();
   refreshMenu();
+  resetHistory();
+  refreshEditor();
 }
 
 /* An image opens whichever generator is in front, a .json goes to the
@@ -46,6 +49,11 @@ function take(f) {
   else f.text().then((t) => load(t, f.name));
 }
 
+const newLevel = () => {
+  load(newLevelText(), "untitled", true);
+  toast("new level");
+};
+
 /* ---------- events ---------- */
 $("file").addEventListener("change", (e) => {
   take(e.target.files[0]);
@@ -56,6 +64,7 @@ for (const b of document.querySelectorAll("[data-t]")) {
     const k = b.dataset.t;
     state.show[k] = state.show[k] ? 0 : 1;
     b.classList.toggle("on", !!state.show[k]);
+    if (k === "grid") refreshEditor();
     draw();
   });
 }
@@ -75,6 +84,7 @@ initMenu({
   save: saveLevel,
   png: savePng,
   about: openAbout,
+  new: newLevel,
 });
 
 $("zin").addEventListener("click", () => setZ(state.z * 1.4));
@@ -93,15 +103,27 @@ cv.addEventListener(
 );
 
 let drag = null;
+const at = (e) => {
+  const r = cv.getBoundingClientRect();
+  return [e.clientX - r.left, e.clientY - r.top];
+};
+
 cv.addEventListener("pointerdown", (e) => {
+  const [sx, sy] = at(e);
   cv.setPointerCapture(e.pointerId);
+  const [lx, ly] = toLvl(sx, sy);
+  if (onPointer("down", lx, ly, e.shiftKey)) return; // a tool took the gesture
   drag = { x: e.clientX, y: e.clientY };
   cv.classList.add("pan");
 });
 cv.addEventListener("pointermove", (e) => {
-  const r = cv.getBoundingClientRect();
-  const sx = e.clientX - r.left,
-    sy = e.clientY - r.top;
+  const [sx, sy] = at(e);
+  if (state.lv) {
+    const [lx, ly] = toLvl(sx, sy);
+    $("mx").textContent = lx.toFixed(1);
+    $("my").textContent = ly.toFixed(1);
+    if (onPointer("move", lx, ly, e.shiftKey)) return;
+  }
   if (drag) {
     state.cam.x -= (e.clientX - drag.x) / state.z;
     state.cam.y -= (e.clientY - drag.y) / state.z;
@@ -116,13 +138,11 @@ cv.addEventListener("pointermove", (e) => {
       draw();
     }
   }
-  if (state.lv) {
-    const [lx, ly] = toLvl(sx, sy);
-    $("mx").textContent = lx.toFixed(1);
-    $("my").textContent = ly.toFixed(1);
-  }
 });
-cv.addEventListener("pointerup", () => {
+cv.addEventListener("pointerup", (e) => {
+  const [sx, sy] = at(e);
+  const [lx, ly] = toLvl(sx, sy);
+  if (state.lv) onPointer("up", lx, ly, e.shiftKey);
   drag = null;
   cv.classList.remove("pan");
 });
@@ -144,6 +164,10 @@ const toggleGrid = () => document.querySelector('[data-t="grid"]').click();
 
 addEventListener("keydown", (e) => {
   const open = genOpen() || geomOpen() || aboutOpen();
+  if (e.key === "Escape" && cancelGesture()) {
+    e.preventDefault();
+    return;
+  }
   if (e.key === "F1") {
     // Chrome opens its help page on F1; taking the key back may not be allowed
     // everywhere, in which case this simply does nothing extra
@@ -160,7 +184,11 @@ addEventListener("keydown", (e) => {
     // find, find-next, page zoom — so the branch takes it back. Ctrl+F and
     // Ctrl+G are not reliably ours, which is why fit and grid also answer to
     // the bare letters below.
-    if (k === "s") {
+    if (k === "z") {
+      e.shiftKey ? redo() : undo();
+    } else if (k === "y") {
+      redo();
+    } else if (k === "s") {
       e.shiftKey ? savePng() : saveLevel();
     } else if (k === "o") {
       $("file").click();
@@ -183,6 +211,8 @@ addEventListener("keydown", (e) => {
     fit();
   } else if (k === "g") {
     toggleGrid();
+  } else if (k === "n") {
+    newLevel();
   } else return;
   e.preventDefault();
 });
@@ -213,5 +243,6 @@ addEventListener("drop", (e) => {
 loadSprites(draw);
 initImageGen(load);
 initAbout();
+initEditor(draw, renderInfo);
 initGeom(load);
 initView();
